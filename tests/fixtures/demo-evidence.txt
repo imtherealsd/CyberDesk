@@ -1,0 +1,4 @@
+UPI debit alert: INR 18,500 on 12 Aug 2026 at 14:32 IST.
+Transaction reference: UTR-DEMO-18500.
+Channel: UPI. Bank: HDFC.
+Contact shown in the message: +919876543210.
