@@ -228,7 +228,7 @@ export default function CaseWorkspacePage(props: {
         ? ""
         : " No private cloud copy exists for this session.";
       setNotice(
-        (extractionData.extraction?.source === "openai"
+        ((extractionData.extraction?.source === "gemini" || extractionData.extraction?.source === "openai")
           ? "Evidence analyzed. Review the untrusted candidate details before confirming."
           : "Evidence analyzed with the deterministic fallback. Review every candidate detail before confirming.") + storageNotice
       );

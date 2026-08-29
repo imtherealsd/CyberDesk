@@ -77,7 +77,7 @@ export function TrackingScreen({
         {explanation ? (
           <>
             <p className="explanation-source">
-              {explanation.source === "openai"
+              {explanation.source === "gemini" || explanation.source === "openai"
                 ? t.tracking.explainAiEyebrow
                 : t.tracking.explainFallbackTag}
             </p>

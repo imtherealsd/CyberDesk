@@ -79,7 +79,7 @@ export default function Home() {
   const [step, setStep] = useState<JourneyStep>("entry");
   const [description, setDescription] = useState("");
   const [interpretation, setInterpretation] = useState<Interpretation | null>(null);
-  const [interpretationSource, setInterpretationSource] = useState<InterpretationSource>("openai");
+  const [interpretationSource, setInterpretationSource] = useState<InterpretationSource>("gemini");
   const [evidence, setEvidence] = useState<EvidenceItem | null>(null);
   const [complaintText, setComplaintText] = useState("");
   const [caseInfo, setCaseInfo] = useState<DemoCase | null>(null);
@@ -115,6 +115,7 @@ export default function Home() {
         if (typeof parsed.description === "string") setDescription(parsed.description);
         if (parsed.interpretation) setInterpretation(parsed.interpretation);
         if (
+          parsed.interpretationSource === "gemini" ||
           parsed.interpretationSource === "openai" ||
           parsed.interpretationSource === "demo_fallback"
         ) {
@@ -134,17 +135,23 @@ export default function Home() {
 
   useEffect(() => {
     if (!hydrated) return;
-    const state: PersistedJourney = {
-      step,
-      description,
-      interpretation,
-      interpretationSource,
-      evidence,
-      complaintText,
-      caseInfo,
-      explanation,
-    };
-    sessionStorage.setItem(JOURNEY_STORAGE_KEY, JSON.stringify(state));
+    try {
+      sessionStorage.setItem(
+        JOURNEY_STORAGE_KEY,
+        JSON.stringify({
+          step,
+          description,
+          interpretation,
+          interpretationSource,
+          evidence,
+          complaintText,
+          caseInfo,
+          explanation,
+        })
+      );
+    } catch (storageError) {
+      console.warn("Could not preserve the synthetic demo session", storageError);
+    }
   }, [
     hydrated,
     step,
@@ -186,6 +193,7 @@ export default function Home() {
 
   async function understand() {
     setError("");
+    setNotice("");
     if (description.trim().length < 20) {
       setError(t.intake.minCharsError);
       return;
@@ -200,7 +208,7 @@ export default function Home() {
       const data = await response.json();
       if (!response.ok) throw new Error(data.error ?? "Could not interpret the description.");
       setInterpretation(data);
-      setInterpretationSource("openai");
+      setInterpretationSource("gemini");
       setNotice("AI suggestion ready. Review it before it becomes part of your report.");
       setStep("understanding");
     } catch (caught) {
@@ -246,7 +254,7 @@ export default function Home() {
 
       setEvidence(normaliseEvidence(extractionData.evidence as EvidenceItem));
       setNotice(
-        extractionData.extraction?.source === "openai"
+        extractionData.extraction?.source === "gemini" || extractionData.extraction?.source === "openai"
           ? "AI found possible details. Review, edit or remove them before confirming."
           : "Evidence processed with the demo fallback. Review, edit or remove every detail before confirming."
       );
@@ -263,7 +271,7 @@ export default function Home() {
     setInterpretation(seededInterpretation);
     setInterpretationSource("demo_fallback");
     setNotice(
-      "This demo suggestion is deterministic and clearly labelled because OpenAI is unavailable."
+      "This demo suggestion is deterministic and clearly labelled because Gemini AI is unavailable."
     );
     setStep("understanding");
     setError("");

@@ -162,7 +162,7 @@ test("rejects evidence files larger than 5 MB with a citizen-friendly validation
   await expect(page.getByText("Choose a file")).toBeVisible();
 });
 
-test("shows upload and processing stages, then renders the OpenAI evidence suggestions", async ({ page }) => {
+test("shows upload and processing stages, then renders the Gemini evidence suggestions", async ({ page }) => {
   await reachEvidence(page);
   await page.route("**/api/evidence/upload", async (route) => {
     await new Promise((resolve) => setTimeout(resolve, 1000));
@@ -170,7 +170,7 @@ test("shows upload and processing stages, then renders the OpenAI evidence sugge
   });
   await page.route("**/api/evidence/extract", async (route) => {
     await new Promise((resolve) => setTimeout(resolve, 1000));
-    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ evidence: extractedEvidence, extraction: { source: "openai" } }) });
+    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ evidence: extractedEvidence, extraction: { source: "gemini" } }) });
   });
 
   const upload = page.getByLabel("Upload evidence file");
@@ -188,7 +188,7 @@ test("accepts, edits and rejects candidate fields before the verified timeline u
     await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ evidence: uploadedEvidence, storageMessage: "Stored in the private demo evidence vault." }) });
   });
   await page.route("**/api/evidence/extract", async (route) => {
-    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ evidence: extractedEvidence, extraction: { source: "openai" } }) });
+    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ evidence: extractedEvidence, extraction: { source: "gemini" } }) });
   });
   await page.route("**/api/evidence/verify", async (route) => {
     await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ evidence: extractedEvidence, persisted: true }) });
@@ -219,7 +219,7 @@ test("accepts, edits and rejects candidate fields before the verified timeline u
   await expect(page.locator(".timeline")).toContainText("₹18,250");
 });
 
-test("uses the deterministic extraction fallback when OpenAI is unavailable", async ({ page }) => {
+test("uses the deterministic extraction fallback when Gemini AI is unavailable", async ({ page }) => {
   await reachEvidence(page);
   await page.getByLabel("Upload evidence file").setInputFiles("tests/fixtures/demo-evidence.txt");
   await expect(page.getByText("AI extraction unavailable — showing the demo extraction.")).toBeVisible({ timeout: 15_000 });
@@ -227,7 +227,7 @@ test("uses the deterministic extraction fallback when OpenAI is unavailable", as
   await expect(page.getByText("UTR-DEMO-18500", { exact: true })).toBeVisible();
 });
 
-test("evidence extraction API returns structured deterministic fields when OpenAI is unavailable", async ({ request }) => {
+test("evidence extraction API returns structured deterministic fields when Gemini AI is unavailable", async ({ request }) => {
   const response = await request.post("/api/evidence/extract", {
     data: {
       evidence: uploadedEvidence,

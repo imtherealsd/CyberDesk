@@ -4,7 +4,7 @@ import { useState } from "react";
 import type { Interpretation, Urgency } from "@/lib/types";
 import { useI18n } from "@/lib/i18n";
 
-export type InterpretationSource = "openai" | "demo_fallback";
+export type InterpretationSource = "gemini" | "openai" | "demo_fallback";
 
 export interface UnderstandingScreenProps {
   interpretation: Interpretation;
@@ -39,7 +39,7 @@ export function UnderstandingScreen({
     setEditing(false);
   }
 
-  const isAi = source === "openai";
+  const isAi = source === "gemini" || source === "openai";
 
   return (
     <div className="step-panel understanding-panel">

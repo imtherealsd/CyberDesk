@@ -76,7 +76,7 @@ Authenticated Storage object policies require the exact path shape, an evidence 
 
 ## AI and provenance
 
-Uploaded content is untrusted input. OpenAI extraction is server-side, schema-validated, and treated as a candidate suggestion. The model cannot set case status or silently create a verified fact. Citizen accept/edit/remove/restore actions are required before verified facts are persisted and used in the verified timeline. Fallback extraction is deterministic and visibly labelled. Secrets are never sent to the client bundle.
+Uploaded content is untrusted input. Google Gemini API extraction is server-side, schema-validated, and treated as a candidate suggestion. The model cannot set case status or silently create a verified fact. Citizen accept/edit/remove/restore actions are required before verified facts are persisted and used in the verified timeline. Fallback extraction is deterministic and visibly labelled. Secrets are never sent to the client bundle.
 
 ## Demo versus real data
 

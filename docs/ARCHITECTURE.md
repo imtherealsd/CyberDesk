@@ -23,7 +23,7 @@ CyberDesk is an India-focused Civic Incident Desk prototype designed to help cit
                                    ┌───────────────────┴───────────────────┐
                                    ▼                                       ▼
                        [AI Integration Layer]                  [Supabase Backend Layer]
-                         • OpenAI Structured JSON Output         • PostgreSQL Database
+                         • Google Gemini API (gemini-3.6-flash)  • PostgreSQL Database
                          • Prompt Injection Defense Boundaries   • Row-Level Security (RLS)
                          • Sensitive Credential Filtering        • Private Storage Bucket
                          • Deterministic Regex Fallbacks         • Multi-User Case Membership
@@ -44,7 +44,7 @@ The core differentiator of CyberDesk is that **AI output is never treated as aut
                                ▼
    ┌────────────────────────────────────────────────────────┐
    │ 2. AI CANDIDATE EXTRACTION (Untrusted Boundary)        │
-   │    • Structured JSON extraction (OpenAI Responses API) │
+   │    • Structured JSON extraction (Google Gemini API)    │
    │    • Sensitive credential filter (strips OTP/PIN/PAN)  │
    │    • Labeled explicitly as "AI suggestion" (Candidate) │
    └───────────────────────────┬────────────────────────────┘
@@ -67,7 +67,7 @@ The core differentiator of CyberDesk is that **AI output is never treated as aut
 
 ### Safety Invariants:
 1. **No Auto-Promotion**: Candidate fields may be retained as extraction metadata, but only explicitly confirmed fields are written to the real `facts` table.
-2. **Provenance Tracking**: Every fact maintains an origin tag (`openai`, `demo_fallback`, `citizen`, `synthetic`) and timestamp.
+2. **Provenance Tracking**: Every fact maintains an origin tag (`gemini`, `openai`, `demo_fallback`, `citizen`, `synthetic`) and timestamp.
 3. **Sensitive Field Protection**: `isRestrictedEvidenceValue()` removes credential/account-like candidate values, while `redactSensitiveText()` protects raw narratives before AI use and persistence. Valid Indian phone numbers remain usable.
 
 ---
@@ -129,7 +129,7 @@ All emergency helpline numbers (`1930`, `cybercrime.gov.in`) and transaction inv
 
 ## 6. Deployment & Scalability Path
 
-- **Tier 1 (Current Prototype)**: Dual-mode Next.js 15 App Router deployment on Vercel with serverless Supabase PostgreSQL and OpenAI Structured Output APIs.
+- **Tier 1 (Current Prototype)**: Dual-mode Next.js 15 App Router deployment on Vercel with serverless Supabase PostgreSQL and Google Gemini Structured Output APIs (`gemini-3.6-flash`).
 - **Tier 2 (Campus / Pilot)**: Dedicated Supabase instance, Upstash Redis rate-limiting, SHA-256 evidence integrity hashing.
 - **Tier 3 (State / Regional Desk)**: Regional database partitioning by Police Zone / State, immutable audit log table, officer triage console.
 - **Tier 4 (National Scale)**: Integration with Citizen Service Centers (CSCs), DigiLocker identity verification, and multi-region failover.
