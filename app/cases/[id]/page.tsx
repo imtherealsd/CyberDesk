@@ -13,6 +13,7 @@ import { ReviewScreen } from "@/app/components/ReviewScreen";
 import { TrackingScreen } from "@/app/components/TrackingScreen";
 import { getNormalisedMimeType, normaliseEvidence } from "@/lib/evidence";
 import { getExtractionContent } from "@/lib/evidence-content";
+import { getSupabaseBrowserClient } from "@/lib/supabase";
 import type {
   CaseDetail,
   DemoCase,
@@ -77,6 +78,33 @@ export default function CaseWorkspacePage(props: {
     }
     if (user && caseId) {
       fetchCase();
+
+      // Supabase Realtime channel subscription for live updates
+      const supabase = getSupabaseBrowserClient();
+      if (supabase) {
+        const channel = supabase
+          .channel(`realtime-case-${caseId}`)
+          .on(
+            "postgres_changes",
+            { event: "*", schema: "public", table: "evidence", filter: `incident_id=eq.${caseId}` },
+            () => fetchCase()
+          )
+          .on(
+            "postgres_changes",
+            { event: "*", schema: "public", table: "facts", filter: `incident_id=eq.${caseId}` },
+            () => fetchCase()
+          )
+          .on(
+            "postgres_changes",
+            { event: "*", schema: "public", table: "incidents", filter: `id=eq.${caseId}` },
+            () => fetchCase()
+          )
+          .subscribe();
+
+        return () => {
+          supabase.removeChannel(channel);
+        };
+      }
     }
   }, [user, isLoading, caseId, router, fetchCase]);
 
