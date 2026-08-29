@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import type { TimelineEvent as TimelineEventType } from "@/lib/types";
-import { en } from "@/lib/i18n/en";
+import { useI18n } from "@/lib/i18n";
 import { SourceBadge } from "./SourceBadge";
 
 export interface TimelineEventProps {
@@ -21,6 +21,7 @@ export function TimelineEvent({
   const [isEditing, setIsEditing] = useState(false);
   const [draftTitle, setDraftTitle] = useState(event.title);
   const [draftDetail, setDraftDetail] = useState(event.detail);
+  const { t } = useI18n();
 
   function handleStartEdit() {
     setDraftTitle(event.title);
@@ -42,19 +43,19 @@ export function TimelineEvent({
   return (
     <div className="timeline-row">
       <div className="timeline-time-col">
-        <span className="timeline-time">{event.time}</span>
+        <span className="timeline-time font-mono">{event.time}</span>
         <small className="timeline-time-label">
           {event.timeLabel || "IST"}
         </small>
         {event.timePrecision && (
           <span className={`timeline-precision-badge ${event.timePrecision}`}>
             {event.timePrecision === "exact"
-              ? "✓ Exact"
+              ? `✓ ${t.evidence.statusVerified}`
               : event.timePrecision === "approximate"
               ? "≈ Approx"
               : event.timePrecision === "date"
-              ? "📅 Date only"
-              : "Unknown"}
+              ? "📅 Date"
+              : t.understanding.notEnoughInfo}
           </span>
         )}
       </div>
@@ -71,7 +72,7 @@ export function TimelineEvent({
               className="timeline-edit-input"
               value={draftTitle}
               onChange={(e) => setDraftTitle(e.target.value)}
-              aria-label="Edit event title"
+              aria-label={t.common.edit}
             />
           ) : (
             <strong>{event.title}</strong>
@@ -84,9 +85,9 @@ export function TimelineEvent({
               type="button"
               className="timeline-edit-btn"
               onClick={handleStartEdit}
-              aria-label={`Correct: ${event.title}`}
+              aria-label={`${t.timeline.correctButton}: ${event.title}`}
             >
-              {en.timeline.correctButton}
+              {t.timeline.correctButton}
             </button>
           )}
         </div>
@@ -98,7 +99,7 @@ export function TimelineEvent({
               value={draftDetail}
               onChange={(e) => setDraftDetail(e.target.value)}
               rows={2}
-              aria-label="Edit event detail"
+              aria-label={t.common.edit}
             />
             <div className="timeline-edit-actions">
               <button
@@ -106,25 +107,22 @@ export function TimelineEvent({
                 className="inline-button"
                 onClick={handleSave}
               >
-                {en.common.save}
+                {t.common.save}
               </button>
               <button
                 type="button"
                 className="inline-button"
                 onClick={handleCancel}
               >
-                {en.common.cancel}
+                {t.common.cancel}
               </button>
             </div>
           </>
         ) : (
           <p>{event.detail}</p>
         )}
-
-        {!isEditing && (
-          <small className="source-label">{event.source}</small>
-        )}
       </div>
     </div>
   );
 }
+

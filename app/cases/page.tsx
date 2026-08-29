@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
+import { useI18n } from "@/lib/i18n";
 import { PublicNav } from "../components/PublicNav";
 import { PublicFooter } from "../components/PublicFooter";
 import type { CaseSummary } from "@/lib/types";
@@ -27,6 +28,7 @@ function StatusBadge({ status, label }: { status: string; label: string }) {
 
 export default function MyCasesPage() {
   const { user, isLoading, authFetch, signOut } = useAuth();
+  const { t } = useI18n();
   const [cases, setCases] = useState<CaseSummary[]>([]);
   const [loadingCases, setLoadingCases] = useState(true);
   const [error, setError] = useState("");
@@ -67,10 +69,10 @@ export default function MyCasesPage() {
         <PublicNav />
         <main
           id="main-content"
-          className="workspace-main"
-          style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "40vh" }}
+          className="workspace-main flex-center"
+          style={{ minHeight: "40vh" }}
         >
-          <p style={{ color: "var(--muted)" }}>Checking authorization…</p>
+          <p style={{ color: "var(--muted)" }}>{t.cases.checkingAuth}</p>
         </main>
         <PublicFooter />
       </div>
@@ -86,23 +88,23 @@ export default function MyCasesPage() {
         <div className="workspace-page-header">
           <div>
             <span className="prototype-badge" style={{ marginBottom: "8px", display: "inline-block" }}>
-              Case Management Workspace
+              {t.cases.badge}
             </span>
-            <h1 className="workspace-page-title">My Incident Cases</h1>
+            <h1 className="workspace-page-title">{t.cases.title}</h1>
             <p className="workspace-page-subtitle">
-              Private, encrypted workspaces for documenting cyber incidents, organising evidence, and building verified timelines.
+              {t.cases.subtitle}
             </p>
           </div>
 
-          <div style={{ display: "flex", gap: "10px", alignItems: "center", flexWrap: "wrap" }}>
+          <div className="flex-row gap-sm" style={{ flexWrap: "wrap" }}>
             <span
-              className="prototype-badge"
+              className="prototype-badge font-mono"
               style={{ background: "var(--teal-soft)", color: "var(--teal-dark)", borderColor: "var(--teal-border)" }}
             >
               {user?.email}
             </span>
             <Link href="/cases/new" className="primary-button" id="create-case-btn">
-              + New Case
+              + {t.cases.newCaseBtn}
             </Link>
             <button
               type="button"
@@ -110,7 +112,7 @@ export default function MyCasesPage() {
               style={{ fontSize: "0.85rem", padding: "8px 12px" }}
               onClick={() => signOut().then(() => router.push("/"))}
             >
-              Sign out
+              {t.nav.signOut}
             </button>
           </div>
         </div>
@@ -118,7 +120,7 @@ export default function MyCasesPage() {
         {/* Error */}
         {error && (
           <div className="error-box" role="alert" style={{ marginBottom: "24px" }}>
-            <strong>Unable to load cases</strong>
+            <strong>{t.common.accessDenied}</strong>
             <span>{error}</span>
           </div>
         )}
@@ -127,22 +129,21 @@ export default function MyCasesPage() {
         {loadingCases ? (
           <div className="card" style={{ padding: "48px", textAlign: "center", color: "var(--muted)" }}>
             <div style={{ marginBottom: "12px", fontSize: "1.5rem" }}>⏳</div>
-            Loading your cases…
+            {t.cases.loadingText}
           </div>
         ) : cases.length === 0 ? (
           <div className="case-empty-state">
             <div className="case-empty-icon" aria-hidden="true">📁</div>
-            <h2 className="case-empty-title">No incidents documented yet</h2>
+            <h2 className="case-empty-title">{t.cases.emptyTitle}</h2>
             <p className="case-empty-desc">
-              Create your first incident workspace to upload evidence, extract key details with AI,
-              verify facts, and prepare a structured dossier for your bank or the authorities.
+              {t.cases.emptyDesc}
             </p>
             <Link href="/cases/new" className="primary-button" style={{ display: "inline-block" }}>
-              Start an Incident Workspace →
+              {t.cases.newCaseBtn} →
             </Link>
           </div>
         ) : (
-          <div style={{ display: "grid", gap: "14px" }}>
+          <div className="flex-col gap-sm">
             {cases.map((item) => (
               <div key={item.id} className="case-card">
                 <div style={{ flex: "1 1 300px" }}>
@@ -161,18 +162,18 @@ export default function MyCasesPage() {
 
                   <div className="case-card-stats">
                     <span className="case-card-stat">
-                      📁 <strong>{item.evidenceCount}</strong> evidence {item.evidenceCount === 1 ? "file" : "files"}
+                      📁 <strong>{item.evidenceCount}</strong> {t.workspace.tabEvidence}
                     </span>
                     <span className="case-card-stat">
-                      ✓ <strong>{item.verifiedFactCount}</strong> verified {item.verifiedFactCount === 1 ? "fact" : "facts"}
+                      ✓ <strong>{item.verifiedFactCount}</strong> {t.evidence.statusVerified}
                     </span>
                     {item.caseReference && (
-                      <span className="case-card-stat">
+                      <span className="case-card-stat font-mono">
                         Ref: <strong>{item.caseReference}</strong>
                       </span>
                     )}
                     <span className="case-card-stat">
-                      Updated:{" "}
+                      {t.cases.tableUpdated}:{" "}
                       {new Date(item.updatedAt).toLocaleDateString(undefined, {
                         month: "short",
                         day: "numeric",
@@ -188,7 +189,7 @@ export default function MyCasesPage() {
                   className="primary-button"
                   style={{ whiteSpace: "nowrap", padding: "10px 18px", fontSize: "0.9rem" }}
                 >
-                  Open Workspace →
+                  {t.cases.openWorkspace}
                 </Link>
               </div>
             ))}
@@ -206,13 +207,13 @@ export default function MyCasesPage() {
           }}
         >
           <h3 style={{ fontSize: "0.95rem", margin: "0 0 6px", color: "var(--ink)" }}>
-            Looking for the synthetic prototype demo?
+            {t.about.explorationTitle}
           </h3>
           <p style={{ margin: "0 0 12px", fontSize: "0.85rem", color: "var(--muted)" }}>
-            You can still test and explore the pre-seeded bank impersonation scenario without creating a real user-owned case.
+            {t.common.privateByDesignDesc}
           </p>
           <Link href="/" className="secondary-button" style={{ fontSize: "0.85rem", padding: "6px 12px" }}>
-            Explore Synthetic Demo Journey →
+            {t.entry.secondaryCta} →
           </Link>
         </div>
       </main>
@@ -221,3 +222,4 @@ export default function MyCasesPage() {
     </div>
   );
 }
+

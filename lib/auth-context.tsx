@@ -19,8 +19,7 @@ interface AuthContextValue {
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 const LOCAL_TEST_USER_KEY = "cyberdesk_test_auth_user";
 const TEST_AUTH_ENABLED =
-  process.env.NEXT_PUBLIC_CYBERDESK_TEST_AUTH === "1" ||
-  process.env.NODE_ENV !== "production";
+  process.env.NEXT_PUBLIC_CYBERDESK_TEST_AUTH === "1";
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);

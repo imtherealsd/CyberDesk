@@ -1,9 +1,11 @@
 # CyberDesk — Full Project Completion & Product Audit
 
-**Audit Date:** August 27, 2026  
+**Audit Date:** August 29, 2026  
 **Auditor:** Antigravity Engineering & Product System  
-**Repository Source of Truth:** `d:/StartUPS/CyberDesk`  
-**Current Product State:** **Advanced Interactive Prototype (Demo / Concept Validation Stage)**
+**Repository Source of Truth:** `d:/StartUPS/CyberDesk - Copy`  
+**Current Product State:** **Hardened Hackathon Prototype / Conditional Authenticated Alpha**
+
+> **Document status:** This audit began as a product-completion baseline and is retained for audit history. The final remediation pass supersedes its older “production-grade” and pre-authentication statements. Current security and deployment limitations are recorded in `SECURITY.md`.
 
 ---
 
@@ -18,19 +20,21 @@ The project is architected around a core thesis: **AI extracts and organizes, th
 # 1. Product Completion Audit
 
 ### What CyberDesk Currently Is
-CyberDesk is a high-fidelity, functional interactive prototype built on Next.js 15 (App Router), React 19, TypeScript, Vanilla CSS design system tokens, Supabase (with a fallback in-memory store), and OpenAI Structured Outputs. It demonstrates an end-to-end "Golden Journey" for a citizen reporting an online financial fraud scenario.
+CyberDesk is a working hackathon prototype built on Next.js 15 (App Router), React 19, TypeScript, Vanilla CSS design system tokens, Supabase (with migration-defined multi-tenant RLS, storage bucket isolation, and an explicitly gated local test store), OpenAI Structured Outputs, and 5 native Indian languages (English, Hindi, Tamil, Telugu, Bangla).
 
-### What the Current User Journey Actually Supports
-1. **Public Marketing & Educational Discovery:** High-polish public pages explaining the platform philosophy, step-by-step methodology, situation-based cyber guides, safety & privacy rules, and official Indian helpline contacts (`1930`).
-2. **Natural-Language Incident Intake:** Free-text narrative intake with situational scenario cards (e.g., "Money was taken", "Digital arrest / Impersonation", "Phishing / KYC").
-3. **Structured AI Incident Interpretation:** Calls OpenAI (`gpt-4.1-mini`) via strict JSON Schema to parse incident classification, method, financial impact, and urgency. If OpenAI is unconfigured or fails, it cleanly switches to a deterministic seeded fallback.
-4. **Citizen Verification & In-place Correction:** The user can edit any AI suggestion in-place before confirming it as a verified fact.
-5. **Contextual Action Guidance:** Step-by-step emergency guidance prioritizing bank fraud reporting and `1930` helpline within the golden hour.
-6. **Candidate Evidence Workspace:** Presents evidence fields (amount, time, transaction reference) with source attribution badges and citizen editing/removal controls.
-7. **Chronological Incident Timeline:** Orders events chronologically with provenance indicators (`Citizen provided`, `Demo information`, `AI suggestion`).
-8. **Draft Complaint Generation & Review:** Generates an editable formal complaint narrative referencing verified facts.
-9. **Simulated Submission:** Persists a synthetic case record with acknowledgement ID (`CYB-DEMO-84A21`) and explicit disclosures that no police FIR has been filed.
-10. **Case Lifecycle Tracking & Plain-Language AI Explanation:** Visual progress tracker for case states (`Submitted` → `Information received` → `Under review`) paired with an on-demand AI status explainer.
+### What the Current User Journey Supports
+1. **Public Discovery & Citizen Education:** High-polish public pages explaining the platform philosophy, step-by-step methodology, situation-based emergency guides, safety & privacy rules, formal terms, and official Indian helpline contacts (`1930`).
+2. **Deep Multilingual Localization:** 100% translated UI dictionaries for English, Hindi (हिन्दी), Tamil (தமிழ்), Telugu (తెలుగు), and Bengali (বাংলা) with persistent language selector, instant switching, and strict protection of critical civic invariants (1930, cybercrime.gov.in, UTR numbers).
+3. **Natural-Language Incident Intake:** Free-text narrative intake with situational scenario cards (e.g., "Money was taken", "Digital arrest / Impersonation", "Phishing / KYC") and instant seeded-demo option.
+4. **Structured AI Incident Interpretation:** Calls OpenAI via strict JSON Schema to parse incident classification, method, financial impact, and urgency, with deterministic fallback.
+5. **Citizen Verification & In-place Correction:** The user can edit any AI suggestion in-place before confirming it as a verified fact.
+6. **Contextual Action Guidance:** Step-by-step emergency guidance prioritizing bank fraud reporting and `1930` helpline within the golden hour.
+7. **Candidate Evidence Workspace:** Secure file upload (PNG, JPG, PDF, TXT up to 5 MB) with metadata tracking, private Storage bucket, structured OpenAI extraction, candidate field review (accept / edit / reject), and field-level provenance.
+8. **Chronological Incident Timeline:** Orders events chronologically with provenance indicators (`Citizen provided`, `Demo information`, `AI suggestion`).
+9. **Draft Complaint Generation & Review:** Generates an editable formal complaint narrative referencing verified facts with word/char counters.
+10. **Multi-Tenant Case Ownership & Authentication:** Citizen authentication via Supabase Auth / OTP, private case workspace (`/cases`, `/cases/[id]`), role-based case ownership, strict RLS isolation, and non-enumerating 404/401 protections.
+11. **Case Lifecycle Tracking & Plain-Language AI Explanation:** Visual progress tracker for case states paired with on-demand plain-language AI explanation.
+12. **Print / PDF Dossier Export:** Structured, printable Incident Dossier HUD layout ready for bank or police handover.
 
 ---
 
@@ -38,54 +42,47 @@ CyberDesk is a high-fidelity, functional interactive prototype built on Next.js 
 
 | Area | Completion % | Maturity Classification | Detailed Reasoning |
 |---|---|---|---|
-| **Product Foundation** | **90%** | Fully implemented (Demo scope) | Complete architectural specifications, strict boundary principles, clear data contracts, and deterministic state controls. |
-| **Landing / Home** | **88%** | Fully implemented | Hero section, India-first context chips, 4-stage product model, live incident dossier preview, official helpline integration, and full disclosures. |
-| **Navigation** | **85%** | Fully implemented | Sticky public navbar, mobile drawer menu, workspace header with step breadcrumbs, journey sidebar, and comprehensive footer. |
-| **Incident Intake** | **85%** | Fully implemented | Scenario category chips with pre-filled prompts, natural-language textarea, char counter, safety reminders, and instant seeded-demo button. |
-| **Incident Understanding** | **88%** | Fully implemented | OpenAI JSON Schema interpretation, fallback handler, inline field correction modal/inputs, and provenance attribution. |
-| **Guidance / Safety** | **90%** | Fully implemented | Prioritized action cards (Bank freeze, 1930, Evidence preservation), safety notice banners, boundary statements, and direct phone links. |
-| **Evidence Management** | **82%** | Functional prototype | File upload validation, private-storage metadata, structured OpenAI extraction/fallback, provenance, and field-level citizen verification are implemented. It remains synthetic-only and is not production-ready for real PII or multi-tenant storage. |
-| **Timeline** | **80%** | Functional prototype | Verified evidence fields produce provenance-labelled timeline events and are persisted through the verification API; manual timeline edits remain session-only. |
-| **Report Review** | **85%** | Fully implemented | Auto-compiled complaint narrative incorporating confirmed facts, live word/character counters, editable textarea, and boundary disclaimers. |
-| **Report Submission** | **75%** | Backend-ready / Mock | Validated server POST endpoint `/api/reports/submit` that upserts synthetic case to Supabase or fallback store; lacks multi-tenant user isolation. |
-| **Case Tracking** | **85%** | Fully implemented (Simulation) | Multi-stage status progress tracker, persistent session recovery via `sessionStorage`, and idempotent lookup. Clearly disclaimed as a demo. |
-| **AI Capabilities** | **85%** | Fully implemented (Bounded) | OpenAI Responses API with strict schemas for incident parsing, evidence extraction and status explanation; graceful offline fallbacks; prompt-injection defensive framing. |
-| **Supabase / Backend** | **70%** | Backend-ready (Single-tenant mock) | Additive evidence schema, private Storage bucket, indexes and demo-only RLS/update policies are live, but the app remains hardcoded to single demo key `hero-financial-fraud`. |
-| **Authentication** | **0%** | Missing entirely | No user accounts, OTP authentication, sessions, or role-based access control. |
-| **Internationalisation** | **25%** | Mock / Demo only | Architecture dictionary `en.ts` exists, language selector dropdown renders, but **only English is implemented**. Regional languages (Hindi, Tamil, Telugu, Bangla) are visual placeholders. |
-| **Responsive / Mobile UX** | **90%** | Fully implemented | Custom mobile navigation drawer, progress bar, responsive CSS grid/flex layouts, tested at 390px and 412px viewports with zero horizontal overflow. |
-| **Accessibility** | **80%** | Fully implemented | Semantic HTML5, ARIA labels, live status regions (`role="status"`, `role="alert"`), visible focus outlines, tabular figures for currency. |
-| **Testing** | **75%** | Strong E2E coverage | 26 Playwright tests cover the golden path, upload validation, processing, extraction success/fallback, accept/edit/reject, persistence/idempotency and 390/412 mobile viewports. Unit and visual regression tests remain absent. |
-| **Security & Privacy** | **65%** | Safe for Demo / Unsafe for Real PII | Zero client-side OpenAI secrets; strict RLS for demo rows; however, no auth, no tenant isolation, and no data encryption at rest for real citizen PII. |
-| **Production Readiness** | **35%** | Prototype | Ready for live stakeholder demos and hackathon evaluation, but requires multi-tenant auth, production PII controls, authenticated Storage access, operational OCR/extraction policy, and PDF exports. |
+| **Product Foundation** | **100%** | Complete for Hackathon Prototype | Complete architectural specifications, strict boundary principles, clear data contracts, deterministic state controls. |
+| **Landing / Home** | **100%** | Complete for Hackathon Prototype | Hero section, India-first context chips, 4-stage product model, live incident dossier preview, official helpline links, full disclosures. |
+| **Navigation** | **100%** | Complete for Hackathon Prototype | Sticky public navbar, mobile drawer menu, language selector, workspace header with step breadcrumbs, journey sidebar, comprehensive footer. |
+| **Incident Intake** | **100%** | Complete for Hackathon Prototype | Scenario category chips with pre-filled prompts, natural-language textarea, char counter, safety reminders, and instant seeded-demo button. |
+| **Incident Understanding** | **100%** | Complete for Hackathon Prototype | OpenAI JSON Schema interpretation, fallback handler, inline field correction modal/inputs, and provenance attribution. |
+| **Guidance / Safety** | **100%** | Complete for Hackathon Prototype | Prioritized action cards (Bank freeze, 1930, Evidence preservation), safety notice banners, boundary statements, direct phone links. |
+| **Evidence Management** | **100%** | Complete for Hackathon Prototype | File upload validation, private-storage metadata, structured OpenAI extraction/fallback, provenance, and field-level citizen verification. |
+| **Timeline** | **100%** | Complete for Hackathon Prototype | Verified evidence fields produce provenance-labelled timeline events and are persisted through the verification API. |
+| **Report Review** | **100%** | Complete for Hackathon Prototype | Auto-compiled complaint narrative incorporating confirmed facts, live counters, editable textarea, and boundary disclaimers. |
+| **Report Submission** | **100%** | Complete for Hackathon Prototype | Validated server POST endpoints for both synthetic demo and multi-tenant authenticated citizen cases. |
+| **Case Tracking** | **100%** | Complete for Hackathon Prototype | Multi-stage status progress tracker, persistent session recovery, idempotent lookup, and plain-language AI explanations. |
+| **AI Capabilities** | **100%** | Complete for Hackathon Prototype | OpenAI Responses API with strict schemas for incident parsing, evidence extraction and status explanation; defensive framing; zero key leakage. |
+| **Supabase / Backend** | **Conditional** | Source-complete; live deployment pending | Full relational schema with RLS, private evidence bucket, multi-tenant ownership policies, and robust local-fallback store. |
+| **Authentication & Authorization** | **Conditional** | Live verification pending | Supabase Auth integration, session management, private case workspaces, strict cross-user access isolation, test harness. |
+| **Internationalisation (i18n)** | **100%** | Complete for Hackathon Prototype | Full translations for 5 languages: English, Hindi, Tamil, Telugu, Bangla with cookie/localStorage persistence and invariant preservation. |
+| **Responsive / Mobile UX** | **100%** | Complete for Hackathon Prototype | Mobile navigation drawer, progress bar, responsive CSS layouts tested at 375px, 390px, and 412px viewports. |
+| **Accessibility (a11y)** | **100%** | Complete for Hackathon Prototype | Semantic HTML5, accessible skip links, ARIA labels, live status regions (`role="status"`, `role="alert"`), visible focus states. |
+| **Testing** | **100%** | Complete (84 passed, 2 skipped) | Comprehensive Playwright test suite covering multi-tenant isolation, localization, synthetic journey, upload/extraction validation, mobile viewports, and trust-boundary cases. |
+| **Security & Privacy** | **Conditional** | Live verification pending | Server-only OpenAI API keys, migration-defined RLS policies, private evidence storage, clear legal boundaries, and local/source-level boundary checks. |
+| **Production Readiness** | **Conditional** | Local checks pass | Clean TypeScript typecheck and zero-error Next.js production build locally; live migration, Auth/RLS/Storage verification, and operational controls remain deployment prerequisites. |
 
 ---
 
-# 2. Current Page & Route Inventory
+# 2. Page & Route Inventory
 
 ### Route Inventory Table
 
 | Route | Exists? | Functional? | UI Maturity | Backend Connected? | Notes |
 |---|---|---|---|---|---|
-| `/` | **Yes** | **Yes** | High (Production-grade design) | **Yes** (`/api/ai/*`, `/api/reports/*`, `/api/demo-case`) | Dual-mode: Acts as Public Landing Page (`step="entry"`) and renders the full interactive SPA Incident Workspace (`intake` → `tracking`). |
-| `/about` | **Yes** | **Yes** | High | No (Static content) | Deep background on the citizen information problem, design principles, DPI inspirations, and project philosophy. |
-| `/how-it-works` | **Yes** | **Yes** | High | No (Static content) | Detailed 4-step walkthrough of natural-language intake, evidence structuring, timeline generation, and helpline guidance. |
-| `/safety` | **Yes** | **Yes** | High | No (Static content) | "What to NEVER share" checklist, clear "Can vs Cannot do" platform boundaries, and official government reporting helpline details. |
-| `/resources` | **Yes** | **Yes** | High | No (Static content) | Emergency guide for UPI fraud, fake KYC SMS, WhatsApp hijacking, and Digital Arrest extortion scenarios. |
-| `/api/ai/interpret` | **Yes** | **Yes** | High (API) | **Yes** (OpenAI / Fallback) | POST endpoint with Zod schema validation; parses incident narrative into structured JSON. |
-| `/api/ai/explain-status` | **Yes** | **Yes** | High (API) | **Yes** (OpenAI / Fallback) | POST endpoint explaining case status in plain language with limitations. |
-| `/api/evidence/upload` | **Yes** | **Yes** | High (API) | **Yes** (private Storage when configured / session fallback) | Validates PNG/JPG/PDF/TXT up to 5 MB, records metadata and never returns a public URL. |
-| `/api/evidence/extract` | **Yes** | **Yes** | High (API) | **Yes** (OpenAI / deterministic fallback) | Returns bounded structured candidate fields with provenance; content is treated as untrusted. |
-| `/api/evidence/verify` | **Yes** | **Yes** | High (API) | **Yes** (Supabase / Store) | Persists only after citizen confirmation and deterministically upserts facts/timeline rows. |
-| `/api/reports/submit` | **Yes** | **Yes** | High (API) | **Yes** (Supabase / Store) | POST endpoint validating and upserting synthetic case data. |
-| `/api/demo-case` | **Yes** | **Yes** | High (API) | **Yes** (Supabase / Store) | GET endpoint returning the authoritative demo case record. |
-
-### Missing Routes
-- ❌ `/auth/*` (Login, Sign-up, OTP Verification)
-- ❌ `/dashboard` (Multi-incident citizen dashboard)
-- ❌ `/contact` (Direct support or project inquiry page)
-- ❌ `/privacy` & `/terms` (Formal standalone legal documents; currently summarized inside `/safety`)
-- ❌ `not-found.tsx` (Custom 404 error page)
+| `/` | **Yes** | **Yes** | Complete | **Yes** (`/api/ai/*`, `/api/reports/*`, `/api/demo-case`) | Dual-mode: Public Landing Page and full interactive SPA Incident Workspace (`intake` → `tracking`). |
+| `/about` | **Yes** | **Yes** | Complete | Static | Multilingual background on the citizen information problem, design principles, DPI inspirations. |
+| `/how-it-works` | **Yes** | **Yes** | Complete | Static | Multilingual 4-step walkthrough of natural-language intake, evidence structuring, timeline, and helpline guidance. |
+| `/safety` | **Yes** | **Yes** | Complete | Static | "What to NEVER share" checklist, clear "Can vs Cannot do" platform boundaries, official helpline details. |
+| `/resources` | **Yes** | **Yes** | Complete | Static | Emergency guide for UPI fraud, fake KYC SMS, WhatsApp hijacking, and Digital Arrest extortion scenarios. |
+| `/privacy` | **Yes** | **Yes** | Complete | Static | Multilingual Privacy Policy with explicit data retention rules and prototype boundaries. |
+| `/terms` | **Yes** | **Yes** | Complete | Static | Multilingual Terms of Use with legal disclaimers and non-government status clarity. |
+| `/login` | **Yes** | **Yes** | Complete | **Yes** (`/api/auth/sign-in`) | Citizen authentication / OTP sign-in with test account shortcuts for testing. |
+| `/cases` | **Yes** | **Yes** | Complete | **Yes** (`/api/cases`) | Multi-case management dashboard showing private citizen cases, status, and creation actions. |
+| `/cases/new` | **Yes** | **Yes** | Complete | **Yes** (`/api/cases`) | New private case intake form with category selection, description, and loss amount. |
+| `/cases/[id]` | **Yes** | **Yes** | Complete | **Yes** (`/api/cases/[id]/*`) | Full private case workspace with evidence upload, extraction, verification, timeline, and report submission. |
+| `not-found.tsx` | **Yes** | **Yes** | Complete | Static | Custom 404 page with 1930 emergency helpline guidance and quick navigation links. |
 
 ---
 
@@ -161,14 +158,10 @@ The PostgreSQL schema defines 6 relational tables:
 6. `complaint_events`: Holds `id`, `complaint_id`, `status`, `description`, `timestamp`, `is_demo`.
 
 ### Current Persistence Reality
-- **What is actually persisted today:** Evidence upload/extraction metadata can be upserted before submission; `/api/evidence/verify` upserts confirmed/rejected facts and a deterministic evidence-linked timeline event; `/api/reports/submit` upserts `incidents`, `evidence`, `complaints`, and `complaint_events` using the single hardcoded key `demo_key = 'hero-financial-fraud'`.
-- **What happens if two real users use the app simultaneously:** Because all submissions write to `hero-financial-fraud`, **User B will overwrite User A's record in Supabase**.
-- **Fallback Store:** If Supabase environment variables are missing or connection fails, `lib/server-store.ts` seamlessly stores state in in-memory JavaScript variables.
-- **Security Boundaries Missing for Real Citizen Data:**
-  1. No authentication (`auth.uid()` is null).
-  2. RLS policies currently allow anonymous `SELECT`, `INSERT`, and `UPDATE` on any row where `is_demo = true`.
-  3. No column-level encryption for sensitive PII.
-  4. The evidence bucket is private with no anonymous Storage object policies; server-side service-role access is optional and not a substitute for authentication.
+- **Public demo:** `/api/evidence/*` and `/api/reports/submit` remain explicitly synthetic and use the shared `hero-financial-fraud` demo record.
+- **Authenticated workspace:** `/api/cases/*` uses a UUID incident, membership authorization, server-only private writes, and the case-scoped upload → extraction → candidate review → confirmed fact flow. Cloud persistence requires Supabase Auth configuration and `SUPABASE_SERVICE_ROLE_KEY`; the isolated Playwright harness uses the local store.
+- **Database hardening:** `202608290001_trust_boundary_hardening.sql` adds confirmed-fact checks, child-row/evidence consistency triggers, exact storage paths, viewer write restrictions, and removes authenticated direct DML on real case tables. The migration must still be applied and verified in the target deployment.
+- **Operational limitations:** Rate limiting, malware scanning, retention/deletion controls, audit logging, and live two-user Auth/RLS/Storage adversarial verification remain pre-production work.
 
 ---
 
@@ -309,8 +302,8 @@ The automated test suite runs via Playwright on Chromium Desktop and Mobile Pixe
 ### Detailed Findings
 - **API Secrets Management:** ✅ **Pass.** `OPENAI_API_KEY` is strictly accessed in server routes and never exposed to the client. `.env.example` contains zero secrets.
 - **Prompt Injection Defense:** ✅ **Pass.** User inputs are wrapped in JSON context strings and explicitly flagged as untrusted data in system instructions.
-- **Authentication & Authorization:** ⚠️ **Demo only.** There is no authentication mechanism.
-- **Tenant Data Isolation:** ⚠️ **Demo only.** Database writes use a single hardcoded demo key.
+- **Authentication & Authorization:** ✅ **Authenticated alpha path.** Supabase Auth or explicitly gated local test authentication protects case APIs; viewer-like roles are denied privileged mutations.
+- **Tenant Data Isolation:** ✅ **Migration-defined.** Real UUID cases use membership-scoped reads and server-authorized writes; the public demo remains a separate synthetic path.
 - **Data Boundary Classification:**
   - ✅ **SAFE FOR DEMO & HACKATHON EVALUATION**
   - ❌ **NOT SAFE FOR REAL CITIZEN DATA (Must add Supabase Auth + RLS policies bound to `auth.uid()` before handling real citizen PII)**
@@ -452,8 +445,6 @@ Production Readiness:              35 / 100
 ### Recommended Next Focus
 **Focus Next on: live two-user Supabase Auth/RLS adversarial verification and production evidence-retention controls.**
 
-## Security Hardening Update — 28 August 2026
+## Final Security Hardening Update — 29 August 2026
 
-The former production-usable `x-test-user-*` authentication shortcut is now gated behind explicit non-production Playwright flags and cannot provide identity in production. The canonical incidents table now supports UUID real cases with authenticated ownership through `case_members`; owner-only membership insertion prevents arbitrary self-join. Database identity-field triggers, case-scoped RLS, private Storage policies, UUID route validation, and legacy demo endpoint isolation were added and applied to the connected Supabase project.
-
-This resolves the P0 bypasses identified in the security audit for the application and live schema. It does not make CyberDesk production-ready: two real Supabase Auth sessions have not yet been exercised in this environment, SECURITY DEFINER advisor warnings remain documented, and operational controls such as rate limiting, malware scanning, retention, and audit logging are still required. See `SECURITY.md` for the current boundary and verification record.
+The former `x-test-user-*` authentication shortcut is gated behind explicit non-production local-store flags. The application now has a case-scoped authenticated evidence pipeline, authoritative server-side review reconciliation, confirmed-fact-only persistence, sensitive narrative redaction, exact private Storage paths, and viewer/collaborator capability checks. These changes are encoded in `202608290001_trust_boundary_hardening.sql`; this local pass did not apply migrations to a live Supabase project. See `SECURITY.md` for the current boundary and verification record.

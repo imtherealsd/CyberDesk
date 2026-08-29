@@ -18,8 +18,9 @@ import type {
   JourneyStep,
   StatusExplanation,
 } from "@/lib/types";
-import { en } from "@/lib/i18n/en";
+import { useI18n } from "@/lib/i18n";
 import { getNormalisedMimeType, normaliseEvidence } from "@/lib/evidence";
+import { getExtractionContent } from "@/lib/evidence-content";
 
 import { CyberDeskShell } from "./components/CyberDeskShell";
 import { EntryScreen } from "./components/EntryScreen";
@@ -57,35 +58,24 @@ type PersistedJourney = {
   explanation: StatusExplanation | null;
 };
 
+const ALL_JOURNEY_STEPS: JourneyStep[] = [
+  "entry",
+  "intake",
+  "understanding",
+  "guidance",
+  "evidence",
+  "timeline",
+  "report",
+  "submitted",
+  "tracking",
+];
+
 function isJourneyStep(value: unknown): value is JourneyStep {
-  return ["entry", ...en.journey.steps.map((item) => item.id)].includes(
-    value as JourneyStep
-  );
-}
-
-function readFileAsDataUrl(file: File) {
-  return new Promise<string>((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(typeof reader.result === "string" ? reader.result : "");
-    reader.onerror = () => reject(new Error("The selected file could not be read."));
-    reader.readAsDataURL(file);
-  });
-}
-
-async function getExtractionContent(file: File) {
-  const mimeType = getNormalisedMimeType(file.name, file.type);
-  if (file.type === "text/plain" || file.name.toLowerCase().endsWith(".txt")) {
-    return { kind: "text" as const, data: (await file.text()).slice(0, 60_000), mimeType };
-  }
-  const data = await readFileAsDataUrl(file);
-  return {
-    kind: mimeType.startsWith("image/") ? "image" as const : "file" as const,
-    data,
-    mimeType,
-  };
+  return typeof value === "string" && ALL_JOURNEY_STEPS.includes(value as JourneyStep);
 }
 
 export default function Home() {
+  const { t } = useI18n();
   const [step, setStep] = useState<JourneyStep>("entry");
   const [description, setDescription] = useState("");
   const [interpretation, setInterpretation] = useState<Interpretation | null>(null);
@@ -197,7 +187,7 @@ export default function Home() {
   async function understand() {
     setError("");
     if (description.trim().length < 20) {
-      setError(en.intake.minCharsError);
+      setError(t.intake.minCharsError);
       return;
     }
     setBusy("understand");
@@ -248,7 +238,7 @@ export default function Home() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           evidence: uploadData.evidence,
-          content: await getExtractionContent(file),
+          content: await getExtractionContent(file, getNormalisedMimeType(file.name, file.type)),
         }),
       });
       const extractionData = await extractionResponse.json();
@@ -430,17 +420,17 @@ export default function Home() {
   const pageTitle = useMemo(
     () =>
       ({
-        entry: en.entry.tagline,
-        intake: en.intake.title,
-        understanding: en.understanding.title,
-        guidance: en.guidance.title,
-        evidence: en.evidence.title,
-        timeline: en.timeline.title,
-        report: en.review.title,
-        submitted: en.submitted.title,
-        tracking: en.tracking.title,
+        entry: t.entry.headline,
+        intake: t.intake.title,
+        understanding: t.understanding.title,
+        guidance: t.guidance.title,
+        evidence: t.evidence.title,
+        timeline: t.timeline.title,
+        report: t.review.title,
+        submitted: t.submitted.title,
+        tracking: t.tracking.title,
       }[step]),
-    [step]
+    [step, t]
   );
 
   const completedSteps = new Set<JourneyStep>();

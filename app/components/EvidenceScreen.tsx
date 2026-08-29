@@ -3,7 +3,7 @@
 import { useRef, useState } from "react";
 import type { CandidateField, EvidenceCategory, EvidenceItem } from "@/lib/types";
 import { EVIDENCE_CATEGORIES, getCategoryLabel, isSupportedEvidenceFile, MAX_EVIDENCE_BYTES } from "@/lib/evidence";
-import { en } from "@/lib/i18n/en";
+import { useI18n } from "@/lib/i18n";
 import { EvidenceCard } from "./EvidenceCard";
 import { SourceBadge } from "./SourceBadge";
 
@@ -43,6 +43,7 @@ export function EvidenceScreen({
   const [category, setCategory] = useState<EvidenceCategory>("transaction");
   const [localError, setLocalError] = useState("");
   const [isDragOver, setIsDragOver] = useState(false);
+  const { t } = useI18n();
 
   function getFieldId(field: CandidateField) {
     return field.id ?? `${field.fieldKey ?? field.label}:${field.evidenceId ?? evidence?.id ?? "evidence"}`;
@@ -97,11 +98,11 @@ export function EvidenceScreen({
     setLocalError("");
     if (!file) return;
     if (file.size > MAX_EVIDENCE_BYTES) {
-      setLocalError("That file is too large. Try a file smaller than 5 MB.");
+      setLocalError(t.evidence.fileSizeError);
       return;
     }
     if (!isSupportedEvidenceFile(file.name, file.type)) {
-      setLocalError("That file type isn't supported yet. Try a JPG, PNG, PDF or TXT file.");
+      setLocalError(t.evidence.fileTypeError);
       return;
     }
     await onUploadFile(file, category);
@@ -129,35 +130,35 @@ export function EvidenceScreen({
 
   return (
     <div className="step-panel evidence-panel">
-      <p className="lead">{en.evidence.lead}</p>
+      <p className="lead">{t.evidence.lead}</p>
 
       {!evidence ? (
         <>
           <div className="evidence-empty">
             <div className="evidence-empty-icon" aria-hidden="true">📄</div>
-            <strong>{en.evidence.emptyTitle}</strong>
-            <p>{en.evidence.emptyDesc}</p>
+            <strong>{t.evidence.emptyTitle}</strong>
+            <p>{t.evidence.emptyDesc}</p>
             <button type="button" className="evidence-add-btn" onClick={onAdd}>
               <span className="plus" aria-hidden="true">+</span>
               <span>
-                <strong>{en.evidence.addSyntheticButton}</strong>
-                <small>{en.evidence.addSyntheticSubtext}</small>
+                <strong>{t.evidence.addSyntheticButton}</strong>
+                <small>{t.evidence.addSyntheticSubtext}</small>
               </span>
               <span className="arrow" aria-hidden="true">→</span>
             </button>
 
-          {/* Visual category grid */}
+            {/* Visual category grid */}
             <div className="evidence-upload-card">
               <div className="evidence-upload-heading">
                 <div>
-                  <strong>Upload evidence from your device</strong>
-                  <p>Use a synthetic or redacted file for this prototype. PNG, JPG, PDF and TXT up to 5 MB.</p>
+                  <strong>{t.evidence.uploadHeading}</strong>
+                  <p>{t.evidence.uploadAreaSubtitle}</p>
                 </div>
                 <span className="upload-lock" aria-hidden="true">▣</span>
               </div>
 
               <label className="field-label" style={{ marginBottom: "8px", display: "block" }}>
-                What kind of evidence is this?
+                {t.evidence.categoryLabel}
               </label>
               <div className="evidence-category-grid" role="group" aria-label="Evidence category selection">
                 {EVIDENCE_CATEGORIES.map((item) => (
@@ -213,10 +214,10 @@ export function EvidenceScreen({
                   <>
                     <div className="upload-dropzone-icon" aria-hidden="true">☁</div>
                     <p className="upload-dropzone-title">
-                      Drop a file here, or click to browse
+                      {t.evidence.dropzoneText}
                     </p>
                     <p className="upload-dropzone-desc">
-                      PNG, JPG, PDF or TXT · Max 5 MB
+                      {t.evidence.uploadAreaSubtitle}
                     </p>
                     <button
                       type="button"
@@ -225,7 +226,7 @@ export function EvidenceScreen({
                       disabled={isProcessing}
                       style={{ marginTop: "12px", pointerEvents: "auto", position: "relative", zIndex: 2 }}
                     >
-                      Choose a file
+                      {t.evidence.chooseFileBtn}
                     </button>
                   </>
                 )}
@@ -235,7 +236,7 @@ export function EvidenceScreen({
             </div>
           </div>
           <div className="form-actions step-actions">
-            <button type="button" className="secondary-button" onClick={onBack}>{en.common.back}</button>
+            <button type="button" className="secondary-button" onClick={onBack}>{t.common.back}</button>
           </div>
         </>
       ) : (
@@ -251,9 +252,9 @@ export function EvidenceScreen({
           <div className="evidence-file-meta">
             <span>{evidence.category ? getCategoryLabel(evidence.category) : evidence.type}</span>
             <span>{evidence.mimeType ?? "File"}</span>
-            {evidence.isDemo && <span className="evidence-status evidence-status-demo">Prototype-only session</span>}
+            {evidence.isDemo && <span className="evidence-status evidence-status-demo">{t.evidence.fieldSourceBadge}</span>}
             <span className={`evidence-status evidence-status-${evidence.uploadStatus ?? "demo"}`}>
-              {evidence.uploadStatus === "uploaded" ? "Private upload complete" : evidence.uploadStatus === "failed" ? "Private upload unavailable" : evidence.uploadStatus === "local_only" ? "Session only" : "Demo information"}
+              {evidence.uploadStatus === "uploaded" ? t.evidence.statusVerified : t.evidence.fieldSourceBadge}
             </span>
           </div>
 
@@ -262,7 +263,7 @@ export function EvidenceScreen({
               <span className="spinner" />
               <div>
                 <strong>{busy === "upload" ? "Uploading your evidence…" : "Looking for useful details…"}</strong>
-                <p>{busy === "upload" ? "Checking the file and preparing its metadata." : "CyberDesk is checking the file. Any details found will stay suggestions until you confirm them."}</p>
+                <p>AI is analyzing the file to find candidate facts.</p>
               </div>
             </div>
           )}
@@ -270,14 +271,21 @@ export function EvidenceScreen({
           {!isProcessing && evidence.extractionStatus === "fallback" && (
             <div className="evidence-fallback-note" role="status">
               <strong>AI extraction unavailable — showing the demo extraction.</strong>
-              <span>{evidence.extractionNotes ?? "These details are limited suggestions and still need your confirmation."}</span>
+              <span>{evidence.extractionNotes ?? t.evidence.candidateFieldsDesc}</span>
             </div>
           )}
 
           {!isProcessing && evidence.extractionStatus === "failed" && (
-            <div className="evidence-fallback-note evidence-fallback-error" role="status">
-              <strong>We could not finish processing this file.</strong>
-              <span>The file is still listed for this session. Review it yourself or continue with the synthetic demo evidence.</span>
+            <div className="evidence-fallback-note" role="alert">
+              <strong>Evidence was uploaded, but analysis did not complete.</strong>
+              <span>Review the original file manually. No candidate details were treated as verified facts.</span>
+            </div>
+          )}
+
+          {!isProcessing && evidence.extractionStatus === "complete" && evidence.candidateFields.length === 0 && (
+            <div className="evidence-fallback-note" role="status">
+              <strong>No safe candidate details were found.</strong>
+              <span>Review the original evidence yourself before continuing.</span>
             </div>
           )}
 
@@ -285,8 +293,8 @@ export function EvidenceScreen({
             <div className="evidence-review-heading">
               <span className="spark" aria-hidden="true">✦</span>
               <div>
-                <strong>AI found possible details.</strong>
-                <span>They are suggestions only. Accept, edit or remove each one before confirming.</span>
+                <strong>{t.evidence.candidateFieldsTitle}</strong>
+                <span>{t.evidence.candidateFieldsDesc}</span>
               </div>
             </div>
           )}
@@ -304,26 +312,19 @@ export function EvidenceScreen({
             ))}
           </div>
 
-          {!isProcessing && evidence.candidateFields.length === 0 && (
-            <div className="evidence-no-fields">
-              <strong>No safe candidate details were found.</strong>
-              <p>Keep the original file. You can still add this evidence to the record after reviewing it yourself.</p>
-            </div>
-          )}
-
           <div className="evidence-suggestions">
-            <span className="eyebrow">{en.evidence.suggestionsEyebrow}</span>
+            <span className="eyebrow">{t.evidence.suggestionsEyebrow}</span>
             <div className="suggestion-chips">
-              {en.evidence.suggestions.map((suggestion) => <span className="suggestion-chip" key={suggestion}>{suggestion}</span>)}
+              {t.evidence.suggestions.map((suggestion) => <span className="suggestion-chip" key={suggestion}>{suggestion}</span>)}
             </div>
           </div>
 
           <div className="evidence-foot">
-            <span>{confirmedCount ? `${confirmedCount} detail${confirmedCount === 1 ? "" : "s"} confirmed by you.` : en.evidence.footNotice}</span>
+            <span>{confirmedCount ? `${confirmedCount} ${t.evidence.statusVerified}` : t.evidence.footNotice}</span>
             <div className="action-buttons">
-              <button type="button" className="secondary-button" onClick={onBack}>{en.common.back}</button>
+              <button type="button" className="secondary-button" onClick={onBack}>{t.common.back}</button>
               <button type="button" className="primary-button" onClick={onContinue} disabled={isProcessing || busy === "verify"}>
-                {busy === "verify" ? "Saving verified details…" : en.evidence.confirmVerifiedButton} <span aria-hidden="true">→</span>
+                {busy === "verify" ? t.common.loading : t.evidence.confirmVerifiedButton} <span aria-hidden="true">→</span>
               </button>
             </div>
           </div>

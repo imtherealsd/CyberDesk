@@ -1,7 +1,7 @@
 "use client";
 
 import type { JourneyStep } from "@/lib/types";
-import { en } from "@/lib/i18n/en";
+import { useI18n } from "@/lib/i18n";
 
 export interface JourneySidebarProps {
   currentStep: JourneyStep;
@@ -14,12 +14,13 @@ export function JourneySidebar({
   completedSteps,
   onNavigate,
 }: JourneySidebarProps) {
-  const steps = en.journey.steps;
+  const { t } = useI18n();
+  const steps = t.journey.steps;
   const activeIndex = Math.max(0, steps.findIndex((item) => item.id === currentStep));
 
   return (
     <aside className="journey-nav" aria-label="Journey progress">
-      <p className="eyebrow">Your journey</p>
+      <p className="eyebrow">{t.common.stepOf}</p>
       <div className="journey-list">
         {steps.map((item, index) => {
           const stepId = item.id as JourneyStep;
@@ -46,11 +47,12 @@ export function JourneySidebar({
       <div className="nav-note">
         <span className="mini-shield" aria-hidden="true">✓</span>
         <p>
-          <strong>{en.common.privateByDesign}</strong>
+          <strong>{t.common.privateByDesign}</strong>
           <br />
-          {en.common.privateByDesignDesc}
+          {t.common.privateByDesignDesc}
         </p>
       </div>
     </aside>
   );
 }
+

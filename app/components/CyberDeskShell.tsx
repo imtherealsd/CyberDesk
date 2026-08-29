@@ -2,7 +2,7 @@
 
 import React from "react";
 import type { EvidenceItem, Interpretation, JourneyStep } from "@/lib/types";
-import { en } from "@/lib/i18n/en";
+import { useI18n } from "@/lib/i18n";
 import { PublicNav } from "./PublicNav";
 import { PublicFooter } from "./PublicFooter";
 import { IncidentWorkspaceHeader } from "./IncidentWorkspaceHeader";
@@ -28,7 +28,8 @@ export function CyberDeskShell({
   onStartIncident,
   children,
 }: CyberDeskShellProps) {
-  const steps = en.journey.steps;
+  const { t } = useI18n();
+  const steps = t.journey.steps;
   const activeIndex = Math.max(0, steps.findIndex((item) => item.id === currentStep));
   const isEntry = currentStep === "entry";
 
@@ -65,7 +66,7 @@ export function CyberDeskShell({
             <div className="content-kicker">
               <span className="step-dot" />
               <span>
-                {en.common.stepOf} {String(activeIndex + 1).padStart(2, "0")} {en.common.of} {steps.length}
+                {t.common.stepOf} {String(activeIndex + 1).padStart(2, "0")} {t.common.of} {steps.length}
               </span>
               <span className="kicker-line" />
             </div>
@@ -88,3 +89,4 @@ export function CyberDeskShell({
     </div>
   );
 }
+

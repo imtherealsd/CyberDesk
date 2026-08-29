@@ -4,12 +4,12 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
+import { useI18n } from "@/lib/i18n";
 import { PublicNav } from "../components/PublicNav";
 import { PublicFooter } from "../components/PublicFooter";
 
 const TEST_AUTH_ENABLED =
-  process.env.NEXT_PUBLIC_CYBERDESK_TEST_AUTH === "1" ||
-  process.env.NODE_ENV !== "production";
+  process.env.NEXT_PUBLIC_CYBERDESK_TEST_AUTH === "1";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -17,6 +17,7 @@ export default function LoginPage() {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const { signInWithOtp, testLoginAs, user } = useAuth();
+  const { t } = useI18n();
   const router = useRouter();
 
   const errorId = "login-error";
@@ -25,7 +26,7 @@ export default function LoginPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!email.trim() || !email.includes("@")) {
-      setError("Please enter a valid email address.");
+      setError(t.login.invalidEmailError);
       return;
     }
 
@@ -55,7 +56,9 @@ export default function LoginPage() {
     fullName: string;
   }) {
     testLoginAs(testUser);
-    router.push("/cases");
+    // Let the AuthProvider commit the simulated session before the protected
+    // route evaluates its redirect guard.
+    window.setTimeout(() => router.push("/cases"), 0);
   }
 
   return (
@@ -71,22 +74,21 @@ export default function LoginPage() {
               <span />
               <span />
             </span>
-            <span className="prototype-badge">Secure citizen access</span>
+            <span className="prototype-badge">{t.login.badge}</span>
           </div>
 
-          <h1 className="login-heading">Sign in to CyberDesk</h1>
+          <h1 className="login-heading">{t.login.title}</h1>
           <p className="login-lead">
-            Access your private incident workspaces, upload evidence, and track your prepared dossiers.
-            We use passwordless magic-link sign-in — no password required.
+            {t.login.lead}
           </p>
 
           {/* Already signed in notice */}
           {user && (
             <div className="notice" role="status" style={{ marginBottom: "20px" }}>
               <span aria-hidden="true">✓</span>{" "}
-              You are signed in as <strong>{user.email}</strong>.{" "}
+              {t.login.signedInAs} <strong>{user.email}</strong>.{" "}
               <Link href="/cases" style={{ color: "var(--teal-dark)", fontWeight: 600, textDecoration: "underline" }}>
-                Go to My Cases →
+                {t.login.goToCases}
               </Link>
             </div>
           )}
@@ -113,7 +115,7 @@ export default function LoginPage() {
               aria-live="assertive"
               style={{ marginBottom: "20px" }}
             >
-              <strong>Unable to sign in</strong>
+              <strong>{t.common.accessDenied}</strong>
               <span>{error}</span>
             </div>
           )}
@@ -126,7 +128,7 @@ export default function LoginPage() {
           >
             <div className="login-input-group">
               <label htmlFor="login-email" className="login-label">
-                Email address
+                {t.login.emailLabel}
               </label>
               <input
                 id="login-email"
@@ -135,7 +137,7 @@ export default function LoginPage() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@example.com"
+                placeholder={t.login.emailPlaceholder}
                 className={`login-input${error ? " error" : ""}`}
                 aria-describedby={error ? errorId : undefined}
                 aria-invalid={!!error}
@@ -147,19 +149,19 @@ export default function LoginPage() {
               disabled={busy}
               className="primary-button login-submit-btn"
             >
-              {busy ? "Sending magic link…" : "Send passwordless magic link →"}
+              {busy ? t.login.submittingBtn : t.login.submitBtn}
             </button>
           </form>
 
           {/* How it works hint */}
           <p style={{ fontSize: "0.8rem", color: "var(--muted)", marginTop: "14px", marginBottom: 0, lineHeight: 1.55 }}>
-            A one-time link will be sent to your email. Click it to sign in — no password, no account creation needed.
+            {t.login.testUsersDesc}
           </p>
 
           {/* Test access — only shown in dev/test mode */}
           {TEST_AUTH_ENABLED && (
             <div className="test-access-section">
-              <p className="test-access-title">Fast Test Access (Alpha Simulation)</p>
+              <p className="test-access-title">{t.login.testUsersTitle}</p>
               <div className="test-access-buttons">
                 <button
                   type="button"
@@ -191,15 +193,14 @@ export default function LoginPage() {
                 </button>
               </div>
               <p style={{ fontSize: "0.78rem", color: "var(--muted)", marginTop: "10px", marginBottom: 0, lineHeight: 1.5 }}>
-                Use separate user sessions to test that Citizen A cannot view Citizen B&apos;s cases,
-                evidence, or timeline.
+                {t.login.testUsersDesc}
               </p>
             </div>
           )}
         </div>
 
         <Link href="/" className="login-return-link">
-          ← Return to public home &amp; synthetic demo
+          ← {t.common.brandName}
         </Link>
       </main>
 

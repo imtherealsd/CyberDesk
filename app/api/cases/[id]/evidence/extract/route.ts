@@ -2,7 +2,7 @@ import { z } from "zod";
 import { demoEvidenceExtraction, extractEvidence } from "@/lib/ai";
 import { normaliseEvidence, MAX_TEXT_FOR_EXTRACTION } from "@/lib/evidence";
 import { authorizeCaseRequest } from "@/lib/case-auth";
-import { saveCaseEvidence } from "@/lib/case-store";
+import { getCaseEvidence, saveCaseEvidence } from "@/lib/case-store";
 import { evidenceContentSchema, evidencePayloadSchema } from "@/lib/api-contracts";
 import type { EvidenceItem } from "@/lib/types";
 
@@ -16,15 +16,33 @@ export async function POST(
   props: { params: Promise<{ id: string }> }
 ) {
   const { id: caseId } = await props.params;
-  const authorization = await authorizeCaseRequest(request, caseId);
+  const authorization = await authorizeCaseRequest(request, caseId, { minimumRole: "collaborator" });
   if ("response" in authorization) return authorization.response;
   const { auth } = authorization;
 
   let evidence: EvidenceItem | null = null;
   try {
     const body = bodySchema.parse(await request.json());
-    evidence = normaliseEvidence(body.evidence as EvidenceItem);
-    evidence.isDemo = false;
+    const authoritativeEvidence = await getCaseEvidence(
+      caseId,
+      auth.user,
+      body.evidence.id,
+      auth.client
+    );
+    if (!authoritativeEvidence) {
+      return Response.json({ error: "Evidence not found in this case." }, { status: 404 });
+    }
+    if (authoritativeEvidence.verificationStatus === "confirmed") {
+      return Response.json({ error: "Confirmed evidence cannot be reprocessed." }, { status: 409 });
+    }
+
+    evidence = {
+      ...normaliseEvidence(authoritativeEvidence),
+      candidateFields: [],
+      extractionStatus: "processing",
+      verificationStatus: "candidate",
+      isDemo: false,
+    };
 
     if (body.content?.kind === "text" && body.content.data.length > MAX_TEXT_FOR_EXTRACTION) {
       body.content.data = body.content.data.slice(0, MAX_TEXT_FOR_EXTRACTION);
@@ -46,13 +64,18 @@ export async function POST(
     }
 
     const processedEvidence: EvidenceItem = {
-      ...evidence,
+      ...authoritativeEvidence,
       candidateFields: extraction.candidateFields,
       extractionStatus: extraction.source === "openai" ? "complete" : "fallback",
       extractionNotes: extraction.extractionNotes,
+      verificationStatus: "candidate",
+      isDemo: false,
     };
 
     const persistence = await saveCaseEvidence(caseId, auth.user, processedEvidence, auth.client);
+    if (!persistence.persisted) {
+      return Response.json({ error: "Evidence was analyzed, but the result could not be saved." }, { status: 502 });
+    }
 
     return Response.json({
       evidence: processedEvidence,

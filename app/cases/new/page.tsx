@@ -4,23 +4,26 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
+import { useI18n } from "@/lib/i18n";
 import { PublicNav } from "../../components/PublicNav";
 import { PublicFooter } from "../../components/PublicFooter";
 import type { Urgency } from "@/lib/types";
 
-const INCIDENT_CATEGORIES = [
-  "Online financial fraud / unauthorized debit",
-  "Bank / authority impersonation",
-  "Social media account takeover / extortion",
-  "Phishing message / fake KYC link",
-  "Job / investment / lottery scam",
-  "Cyber stalking / harassment",
-  "Other cyber incident",
-];
-
 export default function NewCasePage() {
   const { user, isLoading, authFetch } = useAuth();
-  const [incidentType, setIncidentType] = useState(INCIDENT_CATEGORIES[0]);
+  const { t } = useI18n();
+
+  const incidentCategories = [
+    t.entry.contextChips[0],
+    t.entry.contextChips[1],
+    t.entry.contextChips[2],
+    t.entry.contextChips[3],
+    t.entry.contextChips[4],
+    t.entry.contextChips[5],
+    t.intake.categories[5].label,
+  ];
+
+  const [incidentType, setIncidentType] = useState(incidentCategories[0]);
   const [description, setDescription] = useState("");
   const [urgency, setUrgency] = useState<Urgency>("high");
   const [busy, setBusy] = useState(false);
@@ -35,7 +38,7 @@ export default function NewCasePage() {
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
     if (description.trim().length < 10) {
-      setError("Please describe what happened in a few sentences (at least 10 characters).");
+      setError(t.newCase.validationDesc);
       return;
     }
 
@@ -74,51 +77,44 @@ export default function NewCasePage() {
       <main id="main-content" className="workspace-main" style={{ maxWidth: "720px" }}>
         <div style={{ marginBottom: "24px" }}>
           <Link href="/cases" style={{ color: "var(--muted)", fontSize: "0.85rem", textDecoration: "none" }}>
-            ← Back to My Cases
+            ← {t.nav.myCases}
           </Link>
           <h1 style={{ fontSize: "1.75rem", margin: "12px 0 6px", color: "var(--ink)" }}>
-            Start a New Incident Workspace
+            {t.newCase.title}
           </h1>
           <p style={{ color: "var(--muted)", margin: 0, fontSize: "0.95rem" }}>
-            Create a private case to organize your evidence, verify details, and prepare an incident dossier.
+            {t.newCase.subtitle}
           </p>
         </div>
 
         <div className="card" style={{ padding: "32px", border: "1px solid var(--line)" }}>
           {error && (
             <div className="error-box" role="alert" style={{ marginBottom: "20px" }}>
-              <strong>Could not create case</strong>
+              <strong>{t.common.accessDenied}</strong>
               <span>{error}</span>
             </div>
           )}
 
-          <form onSubmit={handleCreate} style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+          <form onSubmit={handleCreate} className="flex-col gap-md">
             <div>
-              <label htmlFor="case-category" style={{ display: "block", fontWeight: 600, marginBottom: "8px", fontSize: "0.9rem" }}>
-                Incident category
+              <label htmlFor="case-category" className="form-label">
+                {t.newCase.incidentCategoryLabel}
               </label>
               <select
                 id="case-category"
                 value={incidentType}
                 onChange={(e) => setIncidentType(e.target.value)}
-                style={{
-                  width: "100%",
-                  padding: "10px 14px",
-                  borderRadius: "var(--radius-sm)",
-                  border: "1px solid var(--line-strong)",
-                  fontSize: "0.95rem",
-                  background: "var(--paper-card)",
-                }}
+                className="form-input"
               >
-                {INCIDENT_CATEGORIES.map((cat) => (
+                {incidentCategories.map((cat) => (
                   <option key={cat} value={cat}>{cat}</option>
                 ))}
               </select>
             </div>
 
             <div>
-              <label htmlFor="case-description" style={{ display: "block", fontWeight: 600, marginBottom: "8px", fontSize: "0.9rem" }}>
-                What happened? (Initial summary)
+              <label htmlFor="case-description" className="form-label">
+                {t.newCase.descriptionLabel}
               </label>
               <textarea
                 id="case-description"
@@ -126,49 +122,34 @@ export default function NewCasePage() {
                 required
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                placeholder="Describe what occurred, who contacted you, what platform or channel was involved, and any immediate actions you took…"
-                style={{
-                  width: "100%",
-                  padding: "12px 14px",
-                  borderRadius: "var(--radius-sm)",
-                  border: "1px solid var(--line-strong)",
-                  fontSize: "0.95rem",
-                  lineHeight: 1.5,
-                  fontFamily: "inherit",
-                }}
+                placeholder={t.newCase.descriptionPlaceholder}
+                className="form-input"
               />
               <small style={{ color: "var(--muted)", display: "block", marginTop: "4px" }}>
-                You will be able to upload screenshots, bank alerts, or messages in the workspace.
+                {t.intake.safetyReminder}
               </small>
             </div>
 
             <div>
-              <label htmlFor="case-urgency" style={{ display: "block", fontWeight: 600, marginBottom: "8px", fontSize: "0.9rem" }}>
-                Urgency level
+              <label htmlFor="case-urgency" className="form-label">
+                {t.cases.tableUrgency}
               </label>
               <select
                 id="case-urgency"
                 value={urgency}
                 onChange={(e) => setUrgency(e.target.value as Urgency)}
-                style={{
-                  width: "100%",
-                  padding: "10px 14px",
-                  borderRadius: "var(--radius-sm)",
-                  border: "1px solid var(--line-strong)",
-                  fontSize: "0.95rem",
-                  background: "var(--paper-card)",
-                }}
+                className="form-input"
               >
-                <option value="high">High — Ongoing fraud, recent unauthorized money transfer or active threat</option>
-                <option value="medium">Medium — Suspicious message received or account compromised but no funds lost yet</option>
-                <option value="low">Low — Historic incident or informational inquiry</option>
-                <option value="unknown">Unknown</option>
+                <option value="high">High — {t.understanding.actSoon}</option>
+                <option value="medium">Medium</option>
+                <option value="low">Low</option>
+                <option value="unknown">{t.understanding.notEnoughInfo}</option>
               </select>
             </div>
 
-            <div style={{ display: "flex", justifyContent: "flex-end", gap: "12px", marginTop: "12px" }}>
+            <div className="flex-end gap-sm mt-sm">
               <Link href="/cases" className="secondary-button" style={{ padding: "10px 16px" }}>
-                Cancel
+                {t.newCase.cancelBtn}
               </Link>
               <button
                 type="submit"
@@ -177,7 +158,7 @@ export default function NewCasePage() {
                 id="submit-create-case-btn"
                 style={{ padding: "10px 20px" }}
               >
-                {busy ? "Creating Workspace…" : "Create Case & Open Workspace →"}
+                {busy ? t.newCase.creatingBtn : `${t.newCase.createBtn} →`}
               </button>
             </div>
           </form>
@@ -188,3 +169,4 @@ export default function NewCasePage() {
     </div>
   );
 }
+

@@ -11,7 +11,7 @@ export async function POST(
   props: { params: Promise<{ id: string }> }
 ) {
   const { id: caseId } = await props.params;
-  const authorization = await authorizeCaseRequest(request, caseId);
+  const authorization = await authorizeCaseRequest(request, caseId, { minimumRole: "collaborator" });
   if ("response" in authorization) return authorization.response;
   const { auth } = authorization;
 

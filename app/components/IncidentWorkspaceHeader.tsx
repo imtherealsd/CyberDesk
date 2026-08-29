@@ -2,6 +2,7 @@
 
 import React from "react";
 import type { JourneyStep } from "@/lib/types";
+import { useI18n } from "@/lib/i18n";
 import { LanguageSelector } from "./LanguageSelector";
 
 export interface IncidentWorkspaceHeaderProps {
@@ -13,17 +14,10 @@ export function IncidentWorkspaceHeader({
   currentStep,
   onExit,
 }: IncidentWorkspaceHeaderProps) {
-  const stepTitles: Record<JourneyStep, string> = {
-    entry: "Home",
-    intake: "01 Describe",
-    understanding: "02 Understand",
-    guidance: "03 Next steps",
-    evidence: "04 Evidence",
-    timeline: "05 Timeline",
-    report: "06 Review",
-    submitted: "07 Prepare",
-    tracking: "08 Track",
-  };
+  const { t } = useI18n();
+
+  const stepMeta = t.journey.steps.find((s) => s.id === currentStep);
+  const currentStepName = stepMeta ? `${stepMeta.number} ${stepMeta.label}` : t.workspace.badge;
 
   return (
     <header className="workspace-topbar">
@@ -32,22 +26,21 @@ export function IncidentWorkspaceHeader({
           type="button"
           className="brand"
           onClick={onExit}
-          aria-label="Return to CyberDesk home"
+          aria-label={t.notFound.returnHome}
         >
           <span className="brand-mark" aria-hidden="true">
-            <span />
-            <span />
-            <span />
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/cyberdesk-logo.png" alt="" width={32} height={32} className="brand-logo-img" />
           </span>
           <span className="brand-text">
             <strong>CyberDesk</strong>
-            <small>Incident Workspace</small>
+            <small>{t.workspace.badge}</small>
           </span>
         </button>
         <span className="workspace-divider" aria-hidden="true">/</span>
         <div className="workspace-step-tag">
-          <span className="workspace-step-name">{stepTitles[currentStep] || "Workspace"}</span>
-          <span className="workspace-case-id">CYB-DEMO-84A21</span>
+          <span className="workspace-step-name">{currentStepName}</span>
+          <span className="workspace-case-id font-mono">CYB-DEMO-84A21</span>
         </div>
       </div>
 
@@ -57,11 +50,12 @@ export function IncidentWorkspaceHeader({
           type="button"
           className="secondary-button save-exit-btn"
           onClick={onExit}
-          aria-label="Save and exit to homepage"
+          aria-label={`${t.common.save} & ${t.common.close}`}
         >
-          <span>Save & exit</span>
+          <span>{t.common.save} &amp; {t.common.close}</span>
         </button>
       </div>
     </header>
   );
 }
+

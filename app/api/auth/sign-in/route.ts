@@ -4,12 +4,27 @@ import { isTestAuthEnabled, registerMockUser } from "@/lib/auth-server";
 
 const bodySchema = z.object({
   email: z.string().trim().email(),
-  redirectTo: z.string().optional(),
+  redirectTo: z.string().trim().max(1000).optional(),
 });
+
+function safeCallbackUrl(requestUrl: string, redirectTo?: string) {
+  try {
+    const origin = new URL(requestUrl).origin;
+    const callback = new URL(redirectTo || "/auth/callback", origin);
+    if (callback.origin !== origin || callback.pathname !== "/auth/callback") return null;
+    return callback.toString();
+  } catch {
+    return null;
+  }
+}
 
 export async function POST(request: Request) {
   try {
     const body = bodySchema.parse(await request.json());
+    const callbackUrl = safeCallbackUrl(request.url, body.redirectTo);
+    if (!callbackUrl) {
+      return Response.json({ error: "Please use the CyberDesk sign-in callback." }, { status: 400 });
+    }
     const supabase = getSupabaseClient();
 
     if (!supabase && isTestAuthEnabled()) {
@@ -32,7 +47,7 @@ export async function POST(request: Request) {
     const { error } = await supabase.auth.signInWithOtp({
       email: body.email,
       options: {
-        emailRedirectTo: body.redirectTo || `${new URL(request.url).origin}/auth/callback`,
+        emailRedirectTo: callbackUrl,
       },
     });
 

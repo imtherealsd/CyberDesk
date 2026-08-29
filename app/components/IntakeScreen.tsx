@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { en } from "@/lib/i18n/en";
+import { useI18n } from "@/lib/i18n";
 
 export interface IntakeScreenProps {
   description: string;
@@ -25,8 +25,9 @@ export function IntakeScreen({
   busy,
 }: IntakeScreenProps) {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const { t } = useI18n();
 
-  function handleSelectCategory(cat: typeof en.intake.categories[0]) {
+  function handleSelectCategory(cat: { id: string; prompt?: string }) {
     setSelectedCategory(cat.id);
     if (!description.trim() && cat.prompt) {
       setDescription(cat.prompt);
@@ -35,12 +36,12 @@ export function IntakeScreen({
 
   return (
     <div className="step-panel intake-panel">
-      <p className="lead">{en.intake.lead}</p>
+      <p className="lead">{t.intake.lead}</p>
 
       <div className="category-selection-section">
-        <span className="eyebrow">{en.intake.categoriesEyebrow}</span>
+        <span className="eyebrow">{t.intake.categoriesEyebrow}</span>
         <div className="category-chips-grid" role="group" aria-label="Incident categories">
-          {en.intake.categories.map((cat) => {
+          {t.intake.categories.map((cat) => {
             const isSelected = selectedCategory === cat.id;
             return (
               <button
@@ -58,24 +59,24 @@ export function IntakeScreen({
       </div>
 
       <div className="form-group-narrative">
-        <label htmlFor="incident">{en.intake.label}</label>
+        <label htmlFor="incident">{t.intake.label}</label>
         <textarea
           id="incident"
           value={description}
           onChange={(event) => setDescription(event.target.value)}
-          placeholder={en.intake.placeholder}
+          placeholder={t.intake.placeholder}
           rows={7}
           maxLength={3000}
         />
         <div className="field-meta">
-          <span>{en.intake.safetyReminder}</span>
-          <span>{description.length}/{en.intake.charLimit}</span>
+          <span>{t.intake.safetyReminder}</span>
+          <span>{description.length}/{t.intake.charLimit}</span>
         </div>
       </div>
 
       <div className="form-actions">
         <button type="button" className="secondary-button" onClick={onBack}>
-          {en.common.back}
+          {t.common.back}
         </button>
         <button
           type="button"
@@ -85,23 +86,24 @@ export function IntakeScreen({
         >
           {busy ? (
             <>
-              <span className="spinner" /> {en.intake.submittingButton}
+              <span className="spinner" /> {t.intake.submittingButton}
             </>
           ) : hasInterpretation ? (
             <>
-              {en.intake.continueButton} <span aria-hidden="true">→</span>
+              {t.intake.continueButton} <span aria-hidden="true">→</span>
             </>
           ) : (
             <>
-              {en.intake.submitButton} <span aria-hidden="true">→</span>
+              {t.intake.submitButton} <span aria-hidden="true">→</span>
             </>
           )}
         </button>
       </div>
 
       <button type="button" className="quiet-button" onClick={onSeed}>
-        {en.intake.seedButton}
+        {t.intake.seedButton}
       </button>
     </div>
   );
 }
+

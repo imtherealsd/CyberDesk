@@ -1,7 +1,6 @@
 "use client";
 
-import { en } from "@/lib/i18n/en";
-import { SourceBadge } from "./SourceBadge";
+import { useI18n } from "@/lib/i18n";
 
 export interface EntryScreenProps {
   onBegin: () => void;
@@ -10,135 +9,348 @@ export interface EntryScreenProps {
 }
 
 export function EntryScreen({ onBegin, onViewCase, busy }: EntryScreenProps) {
-  const productStages = [
-    {
-      num: "01",
-      title: "Understand",
-      label: "Make sense of events",
-      desc: "Turn confusing calls, messages, payment alerts and panic into a calm, structured summary.",
-    },
-    {
-      num: "02",
-      title: "Organise",
-      label: "Structured evidence",
-      desc: "Assemble screenshots, UPI reference numbers, SMS alerts and chats with clear source badges.",
-    },
-    {
-      num: "03",
-      title: "Follow",
-      label: "Honest timeline",
-      desc: "Order what happened chronologically without fabricating precision or fake timestamps.",
-    },
-    {
-      num: "04",
-      title: "Act",
-      label: "Prepared next steps",
-      desc: "Know what to do first — bank debit freeze, National Cyber Crime Helpline (1930), and official reporting.",
-    },
-  ];
-
-  const indiaContextChips = [
-    "UPI",
-    "Banking",
-    "WhatsApp",
-    "SMS",
-    "Cards",
-    "Online shopping",
-    "KYC",
-    "Digital Arrest",
-  ];
-
-  const trustGuarantees = [
-    {
-      icon: "🤖",
-      title: "AI suggestions are never facts",
-      desc: "AI assists with reading confusing messages, but its outputs are always labeled as suggestions and require your explicit review.",
-    },
-    {
-      icon: "✓",
-      title: "You confirm what enters the record",
-      desc: "Nothing is locked into your incident timeline or report without your review. You can edit, accept, or discard any detail at any time.",
-    },
-    {
-      icon: "⚖️",
-      title: "Clear civic boundaries",
-      desc: "CyberDesk prepares and organises your information. It does not file official police FIRs or claim official government affiliation.",
-    },
-    {
-      icon: "🔒",
-      title: "Private & encrypted by design",
-      desc: "Your authenticated workspaces and uploaded evidence are strictly protected with Row-Level Security and private storage.",
-    },
-  ];
+  const { t } = useI18n();
 
   return (
     <div className="entry-container">
-      {/* Editorial Hero Section */}
-      <section className="entry-hero">
-        <div className="hero-context-badge">
-          <span className="context-dot" aria-hidden="true" />
-          <span>Built around the way digital incidents happen in India</span>
-        </div>
+      {/* Editorial Split Hero Section */}
+      <section className="entry-hero-split">
+        {/* Left Column: Context, Editorial Headline & Primary CTA */}
+        <div className="hero-copy-col">
+          <div className="hero-context-badge">
+            <span className="context-dot" aria-hidden="true" />
+            <span>{t.entry.contextBadge}</span>
+          </div>
 
-        <h1 className="entry-headline">
-          Cyber incidents are confusing.<br />
-          Getting organised shouldn’t be.
-        </h1>
+          <h1 className="entry-headline" style={{ whiteSpace: "pre-line" }}>
+            {t.entry.headline}
+          </h1>
 
-        <p className="entry-lead">
-          Something went wrong online? CyberDesk helps citizens understand what happened, organise fragmented evidence, and identify useful next steps before approaching banks or authorities.
-        </p>
+          <p className="entry-lead">
+            {t.entry.lead}
+          </p>
 
-        <div className="india-context-strip" aria-label="Supported Indian channels and scenarios">
-          <span className="strip-label">Supported channels:</span>
-          <div className="strip-chips">
-            {indiaContextChips.map((chip) => (
-              <span key={chip} className="context-chip">
-                {chip}
-              </span>
-            ))}
+          <div className="india-context-strip" aria-label="Supported Indian cyber incident channels">
+            <span className="strip-label">{t.entry.commonScenariosLabel}</span>
+            <div className="strip-chips">
+              {t.entry.contextChips.map((chip) => (
+                <span key={chip} className="context-chip">
+                  {chip}
+                </span>
+              ))}
+            </div>
+          </div>
+
+          <div className="entry-cta-section">
+            <button
+              type="button"
+              className="primary-button hero-primary-btn"
+              onClick={onBegin}
+              id="entry-begin"
+            >
+              {t.entry.primaryCta} <span aria-hidden="true">→</span>
+            </button>
+
+            <button
+              type="button"
+              className="secondary-button hero-secondary-btn"
+              onClick={onViewCase}
+              disabled={busy}
+              id="entry-demo"
+            >
+              {busy ? t.entry.secondaryCtaLoading : (
+                <>
+                  {t.entry.secondaryCta} <span aria-hidden="true">↗</span>
+                </>
+              )}
+            </button>
+          </div>
+
+          <div className="hero-civic-note">
+            <span className="civic-note-icon">i</span>
+            <span>{t.entry.civicNote}</span>
           </div>
         </div>
 
-        <div className="entry-cta-section">
-          <button
-            type="button"
-            className="primary-button hero-primary-btn"
-            onClick={onBegin}
-            id="entry-begin"
-          >
-            Start with what happened <span aria-hidden="true">→</span>
-          </button>
+        {/* Right Column: Realistic Investigative Case Sheet / Incident Dossier Preview */}
+        <div className="hero-dossier-col" aria-label="Incident Dossier Record Preview">
+          <div className="hero-case-sheet">
+            <div className="case-sheet-topbar">
+              <div className="case-sheet-title-group">
+                <span className="case-sheet-doc-type">{t.entry.dossierPreview.docType}</span>
+                <span className="case-sheet-ref">CYB-2026-84A21</span>
+              </div>
+              <span className="case-sheet-status-pill">{t.entry.dossierPreview.status}</span>
+            </div>
 
-          <button
-            type="button"
-            className="secondary-button hero-secondary-btn"
-            onClick={onViewCase}
-            disabled={busy}
-            id="entry-demo"
-          >
-            {busy ? "Loading demo case…" : (
-              <>
-                See a demo case <span aria-hidden="true">↗</span>
-              </>
-            )}
-          </button>
+            <div className="case-sheet-grid">
+              <div className="case-sheet-row">
+                <span className="case-field-label">{t.entry.dossierPreview.incidentTypeLabel}</span>
+                <span className="case-field-val">{t.entry.dossierPreview.incidentTypeValue}</span>
+              </div>
+
+              <div className="case-sheet-row highlight-loss">
+                <span className="case-field-label">{t.entry.dossierPreview.lossLabel}</span>
+                <span className="case-field-val amount-val">
+                  <span className="curr">₹</span>35,000<span className="dec">.00</span>
+                </span>
+              </div>
+
+              <div className="case-sheet-row-pair">
+                <div className="case-sheet-half">
+                  <span className="case-field-label">{t.entry.dossierPreview.timeLabel}</span>
+                  <span className="case-field-val font-mono">{t.entry.dossierPreview.timeValue}</span>
+                </div>
+                <div className="case-sheet-half">
+                  <span className="case-field-label">{t.entry.dossierPreview.channelLabel}</span>
+                  <span className="case-field-val">{t.entry.dossierPreview.channelValue}</span>
+                </div>
+              </div>
+
+              <div className="case-sheet-row">
+                <span className="case-field-label">{t.entry.dossierPreview.utrLabel}</span>
+                <div className="case-field-val-with-tag">
+                  <span className="font-mono">TXN-DEMO-84A21</span>
+                  <span className="badge-verified">{t.entry.dossierPreview.badgeVerified}</span>
+                </div>
+              </div>
+
+              <div className="case-sheet-row">
+                <span className="case-field-label">{t.entry.dossierPreview.suspectLabel}</span>
+                <div className="case-field-val-with-tag">
+                  <span className="font-mono">+91 98201 44819</span>
+                  <span className="badge-citizen">{t.entry.dossierPreview.badgeCitizen}</span>
+                </div>
+              </div>
+
+              <div className="case-sheet-row-pair">
+                <div className="case-sheet-half">
+                  <span className="case-field-label">{t.entry.dossierPreview.evidenceLabel}</span>
+                  <span className="case-field-val font-mono">{t.entry.dossierPreview.evidenceValue}</span>
+                </div>
+                <div className="case-sheet-half">
+                  <span className="case-field-label">{t.entry.dossierPreview.verificationLabel}</span>
+                  <span className="case-field-val">{t.entry.dossierPreview.verificationValue}</span>
+                </div>
+              </div>
+
+              <div className="case-sheet-action-box">
+                <span className="case-field-label">{t.entry.dossierPreview.actionTriageLabel}</span>
+                <div className="action-tag-group">
+                  <span className="action-tag-urgent">{t.entry.dossierPreview.action1930}</span>
+                  <span className="action-tag">{t.entry.dossierPreview.actionBank}</span>
+                  <span className="action-tag">{t.entry.dossierPreview.actionPreserve}</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="case-sheet-footer">
+              <span>{t.entry.dossierPreview.footerNote}</span>
+              <span className="font-mono">{t.entry.dossierPreview.auditHash}</span>
+            </div>
+          </div>
         </div>
       </section>
 
-      {/* Golden Hour Urgency Block */}
-      <aside className="golden-hour-block" role="complementary" aria-label="Urgent action reminder for cyber fraud victims">
-        <div className="golden-hour-icon" aria-hidden="true">⏱</div>
-        <div className="golden-hour-content">
-          <span className="golden-hour-eyebrow">Time-sensitive · Act immediately</span>
-          <span className="golden-hour-title">Lost money to online fraud? Every minute matters.</span>
-          <p className="golden-hour-desc">
-            Indian banks can attempt to freeze unauthorised transactions within the first hour of reporting.
-            Contact your bank and call the National Cyber Crime Helpline — do this before you organise your evidence.
+      {/* 5-Stage Transformation Pipeline */}
+      <section className="product-pipeline-section" aria-label="Five-stage incident transformation pipeline">
+        <div className="section-header">
+          <span className="eyebrow">{t.entry.pipeline.eyebrow}</span>
+          <h2 className="section-title font-serif">{t.entry.pipeline.title}</h2>
+          <p className="section-desc">
+            {t.entry.pipeline.desc}
           </p>
+        </div>
+
+        <div className="pipeline-track">
+          {t.entry.pipeline.stages.map((stage, idx) => (
+            <div className={`pipeline-step-item ${idx === 4 ? "terminal-step" : ""}`} key={stage.num}>
+              <div className="step-header-row">
+                <span className="step-number">{stage.num}</span>
+                <span className="step-action-name">{stage.step}</span>
+              </div>
+              <span className="step-label-title">{stage.label}</span>
+              <p className="step-explanation">{stage.desc}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Case Anatomy Section */}
+      <section className="case-anatomy-section" aria-label="Fictional case walkthrough anatomy">
+        <div className="section-header">
+          <span className="eyebrow">{t.entry.anatomy.eyebrow}</span>
+          <h2 className="section-title font-serif">{t.entry.anatomy.title}</h2>
+          <p className="section-desc">
+            {t.entry.anatomy.desc}
+          </p>
+        </div>
+
+        <div className="case-anatomy-sheet">
+          <div className="anatomy-sheet-header">
+            <div>
+              <span className="anatomy-case-id font-mono">{t.entry.anatomy.caseId}</span>
+              <h3 className="anatomy-headline">{t.entry.anatomy.headline}</h3>
+            </div>
+            <div className="anatomy-loss-callout">
+              <span className="loss-label">{t.entry.anatomy.lossLabel}</span>
+              <span className="loss-amount">₹35,000.00</span>
+            </div>
+          </div>
+
+          <div className="anatomy-body-grid">
+            {/* Column 1: Incident & Evidence */}
+            <div className="anatomy-col">
+              <div className="anatomy-block">
+                <span className="anatomy-block-title">{t.entry.anatomy.block1Title}</span>
+                <p className="anatomy-narrative">
+                  {t.entry.anatomy.block1Desc}
+                </p>
+              </div>
+
+              <div className="anatomy-block">
+                <span className="anatomy-block-title">{t.entry.anatomy.block2Title}</span>
+                <ul className="anatomy-list">
+                  {t.entry.anatomy.block2Items.map((item, idx) => (
+                    <li key={idx}><span className="check">✓</span> {item}</li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+
+            {/* Column 2: Verified Facts & Timeline */}
+            <div className="anatomy-col">
+              <div className="anatomy-block">
+                <span className="anatomy-block-title">{t.entry.anatomy.block3Title}</span>
+                <ul className="anatomy-list facts-list">
+                  <li><span className="check">✓</span> <strong>{t.entry.anatomy.block3Items.amountLabel}</strong> ₹35,000.00</li>
+                  <li><span className="check">✓</span> <strong>{t.entry.anatomy.block3Items.utrLabel}</strong> TXN-DEMO-84A21</li>
+                  <li><span className="check">✓</span> <strong>{t.entry.anatomy.block3Items.timeLabel}</strong> 14:32 IST</li>
+                  <li><span className="check">✓</span> <strong>{t.entry.anatomy.block3Items.channelLabel}</strong> {t.entry.anatomy.block3Items.channelValue}</li>
+                </ul>
+              </div>
+
+              <div className="anatomy-block">
+                <span className="anatomy-block-title">{t.entry.anatomy.block4Title}</span>
+                <div className="anatomy-timeline-events">
+                  {t.entry.anatomy.timelineEvents.map((evt, idx) => (
+                    <div className="timeline-row" key={idx}>
+                      <span className="t-time font-mono">{evt.time}</span>
+                      <span className="t-desc">{evt.desc}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="anatomy-sheet-actions">
+            <span className="actions-header">{t.entry.anatomy.block5Title}</span>
+            <div className="actions-badges-row">
+              <span className="action-pill-urgent">{t.entry.anatomy.actions[0]}</span>
+              <span className="action-pill">{t.entry.anatomy.actions[1]}</span>
+              <span className="action-pill">{t.entry.anatomy.actions[2]}</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* AI Boundary Demonstration: AI Assists. Citizens Decide. */}
+      <section className="ai-boundary-section" aria-label="AI boundary and citizen verification model">
+        <div className="section-header">
+          <span className="eyebrow">{t.entry.aiBoundary.eyebrow}</span>
+          <h2 className="section-title font-serif">{t.entry.aiBoundary.title}</h2>
+          <p className="section-desc">
+            {t.entry.aiBoundary.desc}
+          </p>
+        </div>
+
+        <div className="ai-boundary-flow">
+          <div className="flow-step">
+            <div className="flow-step-header">
+              <span className="flow-step-num">01</span>
+              <span className="flow-step-tag ai-tag">{t.entry.aiBoundary.step1Tag}</span>
+            </div>
+            <div className="flow-card ai-suggestion-card">
+              <span className="flow-card-label">{t.entry.aiBoundary.step1Label}</span>
+              <strong className="flow-card-val font-mono">{t.entry.aiBoundary.step1Val}</strong>
+              <span className="flow-card-meta">{t.entry.aiBoundary.step1Meta}</span>
+            </div>
+          </div>
+
+          <div className="flow-arrow" aria-hidden="true">→</div>
+
+          <div className="flow-step">
+            <div className="flow-step-header">
+              <span className="flow-step-num">02</span>
+              <span className="flow-step-tag citizen-tag">{t.entry.aiBoundary.step2Tag}</span>
+            </div>
+            <div className="flow-card citizen-review-card">
+              <span className="flow-card-label">{t.entry.aiBoundary.step2Label}</span>
+              <div className="demo-review-buttons">
+                <span className="btn-demo-accept">{t.entry.aiBoundary.btnAccept}</span>
+                <span className="btn-demo-edit">{t.entry.aiBoundary.btnEdit}</span>
+                <span className="btn-demo-reject">{t.entry.aiBoundary.btnReject}</span>
+              </div>
+              <span className="flow-card-meta">{t.entry.aiBoundary.step2Meta}</span>
+            </div>
+          </div>
+
+          <div className="flow-arrow" aria-hidden="true">→</div>
+
+          <div className="flow-step">
+            <div className="flow-step-header">
+              <span className="flow-step-num">03</span>
+              <span className="flow-step-tag fact-tag">{t.entry.aiBoundary.step3Tag}</span>
+            </div>
+            <div className="flow-card verified-fact-card">
+              <span className="flow-card-label">{t.entry.aiBoundary.step3Label}</span>
+              <strong className="flow-card-val font-mono">{t.entry.aiBoundary.step3Val}</strong>
+              <span className="flow-card-meta verified-meta">{t.entry.aiBoundary.step3Meta}</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Golden Hour Urgency Block (Strictly Restrained Crimson/Saffron) */}
+      <aside className="golden-hour-block" role="complementary" aria-label="Urgent action reminder for cyber fraud victims">
+        <div className="golden-hour-content">
+          <div className="golden-hour-eyebrow-row">
+            <span className="urgent-badge">{t.entry.goldenHour.urgentBadge}</span>
+            <span className="golden-hour-eyebrow">{t.entry.goldenHour.eyebrow}</span>
+          </div>
+
+          <h2 className="golden-hour-title font-serif">{t.entry.goldenHour.title}</h2>
+
+          <div className="golden-hour-steps-grid">
+            <div className="golden-step">
+              <span className="g-num font-mono">{t.entry.goldenHour.step1Num}</span>
+              <div className="g-text">
+                <strong>{t.entry.goldenHour.step1Title}</strong>
+                <p>{t.entry.goldenHour.step1Desc}</p>
+              </div>
+            </div>
+
+            <div className="golden-step">
+              <span className="g-num font-mono">{t.entry.goldenHour.step2Num}</span>
+              <div className="g-text">
+                <strong>{t.entry.goldenHour.step2Title}</strong>
+                <p>{t.entry.goldenHour.step2Desc}</p>
+              </div>
+            </div>
+
+            <div className="golden-step">
+              <span className="g-num font-mono">{t.entry.goldenHour.step3Num}</span>
+              <div className="g-text">
+                <strong>{t.entry.goldenHour.step3Title}</strong>
+                <p>{t.entry.goldenHour.step3Desc}</p>
+              </div>
+            </div>
+          </div>
+
           <div className="golden-hour-actions">
             <a href="tel:1930" className="golden-hour-cta" aria-label="Call 1930, National Cyber Crime Helpline">
-              📞 Call 1930 (Toll-free)
+              {t.entry.goldenHour.ctaCall}
             </a>
             <a
               href="https://cybercrime.gov.in"
@@ -146,143 +358,61 @@ export function EntryScreen({ onBegin, onViewCase, busy }: EntryScreenProps) {
               rel="noopener noreferrer"
               className="golden-hour-secondary"
             >
-              cybercrime.gov.in <span aria-hidden="true">↗</span>
+              {t.entry.goldenHour.ctaPortal} <span aria-hidden="true">↗</span>
             </a>
           </div>
         </div>
       </aside>
 
-      {/* Evidence Transformation Section */}
-      <section className="transformation-section" aria-label="How CyberDesk transforms fragmented evidence into a clear dossier">
-        <div className="section-header" style={{ marginBottom: 0 }}>
-          <span className="eyebrow">Evidence Transformation</span>
-          <h2 className="section-title">From chaotic evidence to a bank-ready record.</h2>
-          <p className="section-desc">
-            When cyber incidents happen, citizens are left with scattered payment alerts, chat screenshots, unknown phone numbers, and panic. CyberDesk structures these fragments into verifiable facts.
-          </p>
-        </div>
-
-        <div className="transformation-grid">
-          <div className="transformation-col">
-            <div className="transformation-card-messy">
-              <strong style={{ fontSize: "0.9rem", color: "var(--ink)" }}>Fragmented citizen artifacts</strong>
-              <div className="messy-items-list">
-                <span className="messy-item">📱 WhatsApp chat screenshots &amp; audio files</span>
-                <span className="messy-item">💳 SMS debit alert with 12-digit UTR snippet</span>
-                <span className="messy-item">📞 Unknown caller numbers &amp; impersonation claims</span>
-                <span className="messy-item">🔗 Suspicious APK or phishing URL links</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="transformation-arrow" aria-hidden="true">
-            <span>CyberDesk Pipeline</span>
-            →
-          </div>
-
-          <div className="transformation-col">
-            <div className="transformation-card-structured">
-              <strong style={{ fontSize: "0.9rem", color: "var(--verified-dark)" }}>Structured incident dossier</strong>
-              <div className="structured-items-list">
-                <span className="structured-item">✓ Confirmed UTR reference number</span>
-                <span className="structured-item">✓ Timestamped event sequence &amp; channel tags</span>
-                <span className="structured-item">✓ Explicit provenance badges (Citizen vs AI)</span>
-                <span className="structured-item">✓ Printable dossier ready for bank or 1930</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Four-Stage Product Model Section */}
-      <section className="product-model-section" aria-label="Four-stage product model">
+      {/* What CyberDesk Is / Isn't Section */}
+      <section className="civic-boundaries-section" aria-label="What CyberDesk helps with and platform boundaries">
         <div className="section-header">
-          <span className="eyebrow">The CyberDesk Method</span>
-          <h2 className="section-title">From a confusing incident to a clear record.</h2>
+          <span className="eyebrow">{t.entry.boundaries.eyebrow}</span>
+          <h2 className="section-title font-serif">{t.entry.boundaries.title}</h2>
           <p className="section-desc">
-            When an online incident occurs, people have scattered messages, SMS, links, and memories. CyberDesk brings these pieces together into one coherent case record.
+            {t.entry.boundaries.desc}
           </p>
         </div>
 
-        <div className="model-grid">
-          {productStages.map((stage) => (
-            <div className="stage-card" key={stage.num}>
-              <span className="stage-num">{stage.num}</span>
-              <span className="stage-label">{stage.label}</span>
-              <strong className="stage-title">{stage.title}</strong>
-              <p className="stage-desc">{stage.desc}</p>
+        <div className="boundaries-grid">
+          {/* Column 1: Helps you */}
+          <div className="boundary-col boundary-helps">
+            <div className="boundary-col-header">
+              <span className="boundary-header-tag helps-tag">{t.entry.boundaries.helpsTag}</span>
             </div>
-          ))}
-        </div>
-      </section>
-
-      {/* Visual Representation of the Incident Record */}
-      <section className="incident-record-preview-section" aria-label="Incident Record Preview">
-        <div className="preview-card">
-          <div className="preview-card-header">
-            <div className="preview-header-meta">
-              <span className="dossier-tag">Preview Incident Dossier</span>
-              <span className="dossier-id">CYB-DEMO-84A21</span>
-              <span className="preview-badge-status">Under review · Synthetic</span>
-            </div>
-            <div className="preview-provenance-tags">
-              <SourceBadge source="citizen" />
-              <SourceBadge source="ai" />
-              <SourceBadge source="synthetic" />
-            </div>
+            <ul className="boundary-list">
+              {t.entry.boundaries.helpsItems.map((item, idx) => (
+                <li key={idx}>
+                  <span className="b-check">✓</span> <strong>{item.title}</strong> {item.desc}
+                </li>
+              ))}
+            </ul>
           </div>
 
-          <div className="preview-card-body">
-            <div className="preview-col">
-              <span className="preview-field-label">Incident Classification</span>
-              <strong className="preview-field-val">Bank Impersonation &amp; Fake KYC Link</strong>
-              <p className="preview-field-sub">Caller claimed KYC expiry, sent link resulting in ₹35,000 debit alert.</p>
+          {/* Column 2: Does not */}
+          <div className="boundary-col boundary-limits">
+            <div className="boundary-col-header">
+              <span className="boundary-header-tag limits-tag">{t.entry.boundaries.limitsTag}</span>
             </div>
-            <div className="preview-col">
-              <span className="preview-field-label">Verified Facts</span>
-              <div className="preview-facts-list">
-                <span>✓ Amount: ₹35,000 (Reported debit)</span>
-                <span>✓ UTR: TXN-DEMO-84A21</span>
-                <span>✓ Channel: WhatsApp / SMS</span>
-              </div>
-            </div>
-            <div className="preview-col">
-              <span className="preview-field-label">Official Next Step Guidance</span>
-              <strong className="preview-action-val">Helpline 1930 &amp; Bank Freeze</strong>
-              <p className="preview-field-sub">Notify bank immediately with transaction reference; report on cybercrime.gov.in.</p>
-            </div>
+            <ul className="boundary-list">
+              {t.entry.boundaries.limitsItems.map((item, idx) => (
+                <li key={idx}>
+                  <span className="b-cross">×</span> <strong>{item.title}</strong> {item.desc}
+                </li>
+              ))}
+            </ul>
           </div>
-        </div>
-      </section>
-
-      {/* 5 Civic-Tech Trust Guarantees */}
-      <section className="trust-guarantees-section" aria-label="Civic-tech trust principles">
-        <div className="section-header">
-          <span className="eyebrow">Trust &amp; Transparency</span>
-          <h2 className="section-title">Built with citizen-first guarantees.</h2>
-          <p className="section-desc">
-            CyberDesk is designed to be a safe, honest, and reliable tool for people navigating high-stress cyber incidents.
-          </p>
-        </div>
-
-        <div className="trust-guarantees-grid">
-          {trustGuarantees.map((item) => (
-            <div key={item.title} className="trust-guarantee-card">
-              <span className="trust-card-icon" aria-hidden="true">{item.icon}</span>
-              <h3 className="trust-card-title">{item.title}</h3>
-              <p className="trust-card-desc">{item.desc}</p>
-            </div>
-          ))}
         </div>
       </section>
 
       {/* Prototype Disclosure Card */}
       <div className="entry-disclosure-card">
-        <span className="disclosure-shield" aria-hidden="true">ℹ</span>
+        <span className="disclosure-shield" aria-hidden="true">i</span>
         <p className="entry-disclosure-text">
-          {en.entry.disclosure}
+          {t.entry.disclosure}
         </p>
       </div>
     </div>
   );
 }
+

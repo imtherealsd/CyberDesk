@@ -1,7 +1,7 @@
 import { statusLabel } from "./case-status";
 import { getSupabaseClient } from "./supabase";
 import { demoNarrative, timelineEvents } from "./mock-data";
-import { normaliseEvidence, normaliseFieldKey } from "./evidence";
+import { normaliseEvidence, normaliseFieldKey, redactSensitiveText } from "./evidence";
 import type { CandidateField, DemoCase, EvidenceItem, Interpretation } from "./types";
 
 const DEMO_KEY = "hero-financial-fraud";
@@ -23,7 +23,7 @@ function getFallbackCase(): DemoCase {
 }
 
 function saveToFallback(input: { complaintText: string }): DemoCase {
-  fallbackComplaintText = input.complaintText;
+  fallbackComplaintText = redactSensitiveText(input.complaintText);
   return getFallbackCase();
 }
 
@@ -34,7 +34,9 @@ function isDemoStatus(value: string): value is DemoCase["status"] {
 function normaliseIncidentInput(interpretation?: Interpretation) {
   return {
     demo_key: DEMO_KEY,
-    incident_type: interpretation?.incident_type ?? "Online financial fraud",
+    incident_type: interpretation?.incident_type
+      ? redactSensitiveText(interpretation.incident_type)
+      : "Online financial fraud",
     description: demoNarrative,
     urgency: interpretation?.urgency ?? "high",
     status: "under_review" as const,
@@ -195,7 +197,9 @@ export async function persistVerifiedEvidence(input: {
     const { error: evidenceError } = await supabase.from("evidence").upsert(evidenceRow(evidence, incident.id));
     if (evidenceError) throw evidenceError;
 
-    const facts = evidence.candidateFields.map((field) => factRow(field, incident.id, evidence));
+    const facts = evidence.candidateFields
+      .filter((field) => field.verificationStatus === "confirmed")
+      .map((field) => factRow(field, incident.id, evidence));
     if (facts.length) {
       const { error: factsError } = await supabase
         .from("facts")
@@ -265,7 +269,7 @@ export async function saveDemoJourney(input: {
 
     const { data: complaint, error: complaintError } = await supabase.from("complaints").upsert({
       incident_id: incident.id,
-      complaint_text: input.complaintText,
+      complaint_text: redactSensitiveText(input.complaintText),
       status: "under_review",
       acknowledgement_id: "CYB-DEMO-84A21",
       is_demo: true,

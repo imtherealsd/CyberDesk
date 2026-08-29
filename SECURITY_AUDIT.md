@@ -4,7 +4,9 @@
 **Scope:** Read-only verification of the repository and connected Supabase project  
 **Audit mode:** No production code, tests, migrations, or Supabase state were modified
 
-## Executive summary
+> **Historical record:** This audit predates the final remediation pass and records the vulnerabilities that triggered it. Its “not ready” conclusion and “local migration not deployed” observations describe the pre-remediation state, not the current repository source. The current implementation and remaining deployment limitations are documented in `SECURITY.md`; the hardening migration is `supabase/migrations/202608290001_trust_boundary_hardening.sql`.
+
+## Executive summary (pre-remediation)
 
 The implementation is **not ready for authenticated alpha use** and should not accept real citizen evidence.
 
@@ -583,4 +585,3 @@ Make the next milestone a **security remediation and live-isolation gate**, not 
 6. Re-run the audit against the staging project and require a clean, exit-0 test run.
 
 Until that gate passes, keep the product in synthetic/demo mode and explicitly prohibit real citizen evidence or PII.
-

@@ -83,14 +83,63 @@ export function normaliseFieldKey(fieldKey: string | undefined, label: string) {
   return fieldKey || FIELD_KEY_BY_LABEL[label.trim().toLowerCase()] || label.toLowerCase().replace(/[^a-z0-9]+/g, "_");
 }
 
+function compactDigits(value: string) {
+  return value.replace(/[\s()-]/g, "");
+}
+
+function isIndianPhoneNumber(value: string) {
+  return /^(?:\+91|91)?[6-9]\d{9}$/.test(compactDigits(value));
+}
+
+function containsSensitiveNumericPattern(value: string) {
+  const numericRuns = value.match(/\d(?:[\d\s-]*\d)?/g) ?? [];
+  return numericRuns.some((run) => {
+    const digits = run.replace(/[\s-]/g, "");
+    return digits.length >= 12 && digits.length <= 19;
+  });
+}
+
+function isLikelyNonSensitiveTransactionReference(fieldKey: string, label: string, value: string) {
+  const referenceContext = `${fieldKey} ${label}`;
+  const trimmed = value.trim();
+  return /(?:transaction|reference|utr|txn|order)/i.test(referenceContext)
+    && /^[A-Z0-9][A-Z0-9_-]{5,}$/i.test(trimmed)
+    && /[A-Z]/i.test(trimmed);
+}
+
 export function isRestrictedEvidenceValue(fieldKey: string, label: string, value: string) {
   const combined = `${fieldKey} ${label} ${value}`;
-  const compact = value.replace(/[\s-]/g, "");
   if (/\b(otp|one[- ]time password|pin|cvv|password|passcode|aadhaar|pan)\b/i.test(combined)) return true;
   if (/\b(card|credit|debit|visa|mastercard|rupay)\b/i.test(combined) && /\d/.test(value)) return true;
-  if (fieldKey !== "phoneNumber" && /^\d{12,19}$/.test(compact)) return true;
-  if (!(["transactionReference", "phoneNumber"].includes(fieldKey)) && /\b\d{12,19}\b/.test(compact)) return true;
+  if (/^[A-Z]{5}\d{4}[A-Z]$/i.test(value.trim())) return true;
+  if (fieldKey === "phoneNumber" && isIndianPhoneNumber(value)) return false;
+  if (containsSensitiveNumericPattern(value) && !isLikelyNonSensitiveTransactionReference(fieldKey, label, value)) return true;
   return false;
+}
+
+/**
+ * Redacts credential-like values from free-text sent to AI or persisted as
+ * narrative text. Valid Indian phone numbers are deliberately preserved.
+ */
+export function redactSensitiveText(value: string) {
+  const phoneValues: string[] = [];
+  let redacted = value.replace(
+    /(?<!\d)(?:\+91[\s-]?)?[6-9](?:[\s-]?\d){9}(?!\d)/g,
+    (phone) => {
+      const token = "__CYBERDESK_PHONE_" + phoneValues.length + "__";
+      phoneValues.push(phone);
+      return token;
+    }
+  );
+
+  redacted = redacted.replace(
+    /(\b(?:otp|one[- ]time password|pin|cvv|password|passcode|aadhaar|pan)\b(?:\s+(?:number|code|value|is))?\s*[:=-]?\s*)([^\s,.;]{3,40})/gi,
+    "$1[redacted]"
+  );
+  redacted = redacted.replace(/\b[A-Z]{5}\d{4}[A-Z]\b/gi, "[redacted PAN]");
+  redacted = redacted.replace(/(?<!\d)(?:\d[\s-]?){12,19}(?!\d)/g, "[redacted sensitive number]");
+
+  return redacted.replace(/__CYBERDESK_PHONE_(\d+)__/g, (_match, index: string) => phoneValues[Number(index)] ?? "[redacted phone]");
 }
 
 function provenanceForSource(source: string, evidenceId: string): EvidenceProvenance {
@@ -135,11 +184,99 @@ export function normaliseEvidence(value: EvidenceItem): EvidenceItem {
     ...value,
     isDemo: value.isDemo ?? true,
     category: value.category ?? "other",
+    description: redactSensitiveText(value.description),
     mimeType: value.mimeType ? getNormalisedMimeType(value.filename, value.mimeType) : "text/plain",
     storageReference: value.storageReference ?? null,
     uploadStatus: value.uploadStatus ?? (value.source.toLowerCase().includes("uploaded") ? "local_only" : "demo"),
     extractionStatus: value.extractionStatus ?? "complete",
     createdAt: value.createdAt ?? new Date().toISOString(),
     candidateFields: uniqueCandidateFields,
+  };
+}
+
+export class EvidenceReviewError extends Error {}
+
+/**
+ * Accept only citizen decisions for fields returned by the authoritative
+ * extraction. Evidence identity, provenance and field semantics remain
+ * server-owned; the client may only change a field value while confirming it.
+ */
+export function reconcileEvidenceReview(
+  authoritativeEvidence: EvidenceItem,
+  submittedEvidence: EvidenceItem
+): EvidenceItem {
+  const authoritative = normaliseEvidence(authoritativeEvidence);
+  const submittedById = new Map<string, CandidateField>();
+
+  for (const submittedField of submittedEvidence.candidateFields) {
+    if (!submittedField.id || submittedById.has(submittedField.id)) {
+      throw new EvidenceReviewError("Evidence fields did not match the saved extraction.");
+    }
+    const authoritativeField = authoritative.candidateFields.find((field) => field.id === submittedField.id);
+    if (!authoritativeField) {
+      throw new EvidenceReviewError("Evidence fields did not match the saved extraction.");
+    }
+    if (
+      (submittedField.fieldKey && submittedField.fieldKey !== authoritativeField.fieldKey) ||
+      submittedField.label !== authoritativeField.label ||
+      submittedField.source !== authoritativeField.source ||
+      (submittedField.evidenceId && submittedField.evidenceId !== authoritative.id)
+    ) {
+      throw new EvidenceReviewError("Evidence fields cannot be changed outside citizen review.");
+    }
+    if (isRestrictedEvidenceValue(
+      authoritativeField.fieldKey ?? "",
+      authoritativeField.label,
+      submittedField.value.trim()
+    )) {
+      throw new EvidenceReviewError("That detail cannot be saved because it may contain sensitive credentials or account numbers.");
+    }
+    submittedById.set(submittedField.id, submittedField);
+  }
+
+  const verifiedAt = new Date().toISOString();
+  const candidateFields = authoritative.candidateFields.map((authoritativeField) => {
+    const submittedField = submittedById.get(authoritativeField.id ?? "");
+    const status = submittedField?.verificationStatus ?? authoritativeField.verificationStatus ?? "candidate";
+
+    if (status === "confirmed") {
+      return {
+        ...authoritativeField,
+        value: submittedField?.value.trim() || authoritativeField.value,
+        verificationStatus: "confirmed" as const,
+        provenance: {
+          ...(authoritativeField.provenance ?? {}),
+          origin: "citizen" as const,
+          evidenceId: authoritative.id,
+          verifiedAt,
+        },
+      };
+    }
+
+    if (status === "rejected") {
+      return {
+        ...authoritativeField,
+        verificationStatus: "rejected" as const,
+        provenance: authoritativeField.provenance
+          ? { ...authoritativeField.provenance, evidenceId: authoritative.id, verifiedAt: undefined }
+          : undefined,
+      };
+    }
+
+    if (submittedField && submittedField.value.trim() !== authoritativeField.value) {
+      throw new EvidenceReviewError("Edited evidence details must be confirmed by the citizen.");
+    }
+
+    return {
+      ...authoritativeField,
+      verificationStatus: "candidate" as const,
+    };
+  });
+
+  return {
+    ...authoritative,
+    candidateFields,
+    verificationStatus: "confirmed",
+    isDemo: false,
   };
 }

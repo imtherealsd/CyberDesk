@@ -29,7 +29,7 @@ export async function POST(
   props: { params: Promise<{ id: string }> }
 ) {
   const { id: caseId } = await props.params;
-  const authorization = await authorizeCaseRequest(request, caseId);
+  const authorization = await authorizeCaseRequest(request, caseId, { minimumRole: "collaborator" });
   if ("response" in authorization) return authorization.response;
   const { auth } = authorization;
 
@@ -66,9 +66,13 @@ export async function POST(
         storageMessage = "Stored in the private case evidence vault.";
       } else {
         uploadStatus = "failed";
-        storageMessage = "Upload to private cloud storage failed; stored locally in current session.";
+        storageMessage = "Private cloud storage failed; analysis can continue in this session, but no cloud copy exists.";
         console.error("Storage upload error:", error);
       }
+    } else if (!supabase) {
+      storageMessage = "No private cloud storage is configured; analysis can continue in this session only.";
+    } else {
+      storageMessage = "Local test mode is active; no cloud copy was created.";
     }
 
     const category = categoryResult.data as EvidenceCategory;
@@ -90,6 +94,9 @@ export async function POST(
     };
 
     const persistence = await saveCaseEvidence(caseId, auth.user, evidence, auth.client);
+    if (!persistence.persisted) {
+      return Response.json({ error: "The evidence was received, but its case metadata could not be saved." }, { status: 502 });
+    }
 
     return Response.json({ evidence, storageMessage, metadataPersisted: persistence.persisted });
   } catch (error) {

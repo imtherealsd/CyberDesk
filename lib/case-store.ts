@@ -1,10 +1,11 @@
 import { statusLabel } from "./case-status";
-import { normaliseEvidence, normaliseFieldKey } from "./evidence";
+import { normaliseEvidence, normaliseFieldKey, redactSensitiveText } from "./evidence";
 import { getSupabaseServiceRoleClient } from "./supabase-server";
 import type {
   CandidateField,
   CaseDetail,
   CaseMember,
+  CaseMemberRole,
   CaseStatus,
   CaseSummary,
   CreateCaseInput,
@@ -46,6 +47,38 @@ function getMockCase(caseId: string): MockCaseRecord | null {
   return mockCases.get(caseId) ?? null;
 }
 
+function mapEvidenceRow(row: any): EvidenceItem {
+  return normaliseEvidence({
+    id: row.id,
+    type: row.type,
+    category: row.category,
+    filename: row.filename,
+    source: row.source,
+    description: row.description || "Evidence file: " + row.filename,
+    mimeType: row.mime_type,
+    storageReference: row.storage_reference,
+    uploadStatus: row.upload_status,
+    extractionStatus: row.extraction_status,
+    extractionNotes: row.extraction_notes,
+    createdAt: row.created_at,
+    isDemo: row.is_demo,
+    candidateFields: Array.isArray(row.extracted_fields) ? row.extracted_fields : [],
+    verificationStatus: row.verification_status,
+  });
+}
+
+function sanitiseInterpretation(input: Interpretation | null | undefined): Interpretation | null | undefined {
+  if (!input) return input;
+  return {
+    ...input,
+    incident_type: input.incident_type ? redactSensitiveText(input.incident_type) : null,
+    possible_method: input.possible_method ? redactSensitiveText(input.possible_method) : null,
+    mentioned_evidence: input.mentioned_evidence.map(redactSensitiveText),
+    missing_information: input.missing_information.map(redactSensitiveText),
+    uncertainties: input.uncertainties.map(redactSensitiveText),
+  };
+}
+
 function checkMockMembership(caseId: string, userId: string): boolean {
   const record = mockCases.get(caseId);
   if (!record) return false;
@@ -76,6 +109,31 @@ export async function isUserCaseMember(
     return true;
   } catch {
     return false;
+  }
+}
+
+export async function getUserCaseRole(
+  caseId: string,
+  userId: string,
+  client: SupabaseClient | null
+): Promise<CaseMemberRole | null> {
+  if (!client || process.env.CYBERDESK_FORCE_LOCAL_STORE === "1") {
+    const record = getMockCase(caseId);
+    if (!record || !checkMockMembership(caseId, userId)) return null;
+    return record.members.get(userId)?.role ?? (record.createdBy === userId ? "owner" : null);
+  }
+
+  try {
+    const { data, error } = await client
+      .from("case_members")
+      .select("role")
+      .eq("incident_id", caseId)
+      .eq("user_id", userId)
+      .maybeSingle();
+    if (error || !data || !["owner", "collaborator", "viewer"].includes(data.role)) return null;
+    return data.role as CaseMemberRole;
+  } catch {
+    return null;
   }
 }
 
@@ -153,8 +211,8 @@ export async function getUserCases(
 
       return {
         id: inc.id,
-        incidentType: inc.incident_type,
-        description: inc.description,
+        incidentType: inc.incident_type ? redactSensitiveText(inc.incident_type) : inc.incident_type,
+        description: redactSensitiveText(inc.description),
         urgency: inc.urgency,
         status: inc.status,
         statusLabel: statusLabel(inc.status),
@@ -189,8 +247,8 @@ export async function getCaseDetail(
 
     return {
       id: record.id,
-      incidentType: record.incidentType,
-      description: record.description,
+      incidentType: record.incidentType ? redactSensitiveText(record.incidentType) : record.incidentType,
+      description: redactSensitiveText(record.description),
       urgency: record.urgency,
       status: record.status,
       statusLabel: statusLabel(record.status),
@@ -200,7 +258,9 @@ export async function getCaseDetail(
       updatedAt: record.updatedAt,
       interpretation: record.interpretation,
       evidence: Array.from(record.evidence.values()),
-      facts: Array.from(record.facts.values()),
+      facts: Array.from(record.facts.values()).filter(
+        (fact) => fact.verificationStatus === "confirmed"
+      ),
       timeline: Array.from(record.timeline.values()),
       complaintText: record.complaintText,
       acknowledgementId: record.acknowledgementId,
@@ -236,35 +296,23 @@ export async function getCaseDetail(
     );
     if (!userMembership) return null;
 
-    const evidenceList: EvidenceItem[] = (incident.evidence || []).map((e: any) => ({
-      id: e.id,
-      type: e.type,
-      category: e.category,
-      filename: e.filename,
-      source: e.source,
-      description: e.description || `Evidence file: ${e.filename}`,
-      mimeType: e.mime_type,
-      storageReference: e.storage_reference,
-      uploadStatus: e.upload_status,
-      extractionStatus: e.extraction_status,
-      extractionNotes: e.extraction_notes,
-      createdAt: e.created_at,
-      isDemo: e.is_demo,
-      candidateFields: Array.isArray(e.extracted_fields) ? e.extracted_fields : [],
-      verificationStatus: e.verification_status,
-    }));
+    const evidenceList: EvidenceItem[] = (incident.evidence || []).map((e: any) => mapEvidenceRow(e));
 
-    const factsList: CandidateField[] = (incident.facts || []).map((f: any) => ({
+    const factsList: CandidateField[] = (incident.facts || [])
+      .filter((f: any) => f.verification_status === "confirmed")
+      .map((f: any) => ({
       id: f.id,
       fieldKey: f.field_key,
       label: f.fact_type,
-      value: typeof f.value === "object" && f.value?.text ? f.value.text : JSON.stringify(f.value),
+      value: redactSensitiveText(
+        typeof f.value === "object" && f.value?.text ? f.value.text : JSON.stringify(f.value)
+      ),
       source: f.source,
       evidenceId: f.evidence_id,
       confidence: f.confidence ? "high" : null,
       verificationStatus: f.verification_status,
       provenance: f.provenance,
-    }));
+      }));
 
     const timelineList: TimelineEvent[] = (incident.timeline_events || []).map((t: any) => ({
       eventKey: t.event_key,
@@ -273,7 +321,7 @@ export async function getCaseDetail(
       timeLabel: t.event_time_label || (t.event_time ? undefined : "Time not reported"),
       timePrecision: t.time_precision,
       title: t.event_type || "Incident event",
-      detail: t.description,
+      detail: redactSensitiveText(t.description),
       source: t.source,
     }));
 
@@ -281,8 +329,8 @@ export async function getCaseDetail(
 
     return {
       id: incident.id,
-      incidentType: incident.incident_type,
-      description: incident.description,
+      incidentType: incident.incident_type ? redactSensitiveText(incident.incident_type) : incident.incident_type,
+      description: redactSensitiveText(incident.description),
       urgency: incident.urgency,
       status: incident.status,
       statusLabel: statusLabel(incident.status),
@@ -294,7 +342,7 @@ export async function getCaseDetail(
       evidence: evidenceList,
       facts: factsList,
       timeline: timelineList,
-      complaintText: complaint?.complaint_text || "",
+      complaintText: complaint?.complaint_text ? redactSensitiveText(complaint.complaint_text) : "",
       acknowledgementId: complaint?.acknowledgement_id,
       members: incident.case_members.map((m: any) => ({
         id: m.id,
@@ -311,6 +359,37 @@ export async function getCaseDetail(
 }
 
 /**
+ * Returns the server-authoritative evidence row for an already authorized
+ * case. Client payloads must not be used as the source of evidence identity
+ * or extraction metadata.
+ */
+export async function getCaseEvidence(
+  caseId: string,
+  user: User,
+  evidenceId: string,
+  client: SupabaseClient | null
+): Promise<EvidenceItem | null> {
+  if (!client || process.env.CYBERDESK_FORCE_LOCAL_STORE === "1") {
+    if (!checkMockMembership(caseId, user.id)) return null;
+    return getMockCase(caseId)?.evidence.get(evidenceId) ?? null;
+  }
+
+  try {
+    const { data, error } = await client
+      .from("evidence")
+      .select("*")
+      .eq("id", evidenceId)
+      .eq("incident_id", caseId)
+      .eq("is_demo", false)
+      .maybeSingle();
+    if (error || !data) return null;
+    return mapEvidenceRow(data);
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Creates a new case in the canonical incidents table and sets the user as owner in case_members.
  */
 export async function createCase(
@@ -320,9 +399,11 @@ export async function createCase(
 ): Promise<CaseDetail> {
   const caseId = crypto.randomUUID();
   const now = new Date().toISOString();
-  const incidentType =
-    input.incidentType || input.interpretation?.incident_type || "Online cyber incident";
-  const urgency = input.urgency || input.interpretation?.urgency || "high";
+  const safeInterpretation = sanitiseInterpretation(input.interpretation);
+  const incidentType = redactSensitiveText(
+    input.incidentType || safeInterpretation?.incident_type || "Online cyber incident"
+  );
+  const urgency = input.urgency || safeInterpretation?.urgency || "high";
 
   if (!client || process.env.CYBERDESK_FORCE_LOCAL_STORE === "1") {
     const member: CaseMember = {
@@ -340,14 +421,14 @@ export async function createCase(
     const record: MockCaseRecord = {
       id: caseId,
       incidentType,
-      description: input.description,
+    description: redactSensitiveText(input.description),
       urgency,
       status: "draft",
       isDemo: false,
       createdBy: user.id,
       createdAt: now,
       updatedAt: now,
-      interpretation: input.interpretation ?? null,
+      interpretation: safeInterpretation ?? null,
       evidence: new Map(),
       facts: new Map(),
       timeline: new Map(),
@@ -376,15 +457,18 @@ export async function createCase(
     };
   }
 
-  // Live Supabase execution with service role for initial atomic creation
-  const serviceClient = getSupabaseServiceRoleClient() || client;
+  // Live private-case writes require the server-only service-role client.
+  const serviceClient = getSupabaseServiceRoleClient();
+  if (!serviceClient) {
+    throw new Error("Private case persistence requires a configured server-side Supabase key.");
+  }
   const { data: incident, error: incError } = await serviceClient
     .from("incidents")
     .insert({
       id: caseId,
       demo_key: null,
       incident_type: incidentType,
-      description: input.description,
+      description: redactSensitiveText(input.description),
       urgency,
       status: "draft",
       is_demo: false,
@@ -432,7 +516,7 @@ export async function createCase(
     role: "owner",
     createdAt: incident.created_at,
     updatedAt: incident.updated_at,
-    interpretation: input.interpretation ?? null,
+    interpretation: safeInterpretation ?? null,
     evidence: [],
     facts: [],
     timeline: [],
@@ -463,6 +547,13 @@ export async function saveCaseEvidence(
   }
 
   try {
+    if (!(await isUserCaseMember(caseId, user.id, client))) return { persisted: false };
+    const writeClient = getSupabaseServiceRoleClient();
+    if (!writeClient) {
+      console.error("saveCaseEvidence requires the server-side Supabase key for real cases.");
+      return { persisted: false };
+    }
+
     const row = {
       id: norm.id,
       incident_id: caseId,
@@ -481,7 +572,7 @@ export async function saveCaseEvidence(
       created_by: user.id,
     };
 
-    const { error } = await client.from("evidence").upsert(row);
+    const { error } = await writeClient.from("evidence").upsert(row);
     if (error) {
       console.error("saveCaseEvidence error:", error);
       return { persisted: false };
@@ -517,6 +608,9 @@ export async function saveCaseVerifiedEvidence(
     if (!record) return { persisted: false, confirmedFieldCount: 0 };
 
     record.evidence.set(norm.id, norm);
+    for (const [factKey, fact] of record.facts) {
+      if (fact.evidenceId === norm.id) record.facts.delete(factKey);
+    }
     confirmedFields.forEach((field) => {
       const key = normaliseFieldKey(field.fieldKey, field.label);
       record.facts.set(`${norm.id}-${key}`, {
@@ -551,6 +645,8 @@ export async function saveCaseVerifiedEvidence(
         detail: [amount ? `Amount: ${amount}.` : "", ref ? `Reference: ${ref}.` : ""].filter(Boolean).join(" "),
         source: "Evidence-derived · citizen confirmed",
       });
+    } else {
+      record.timeline.delete("evidence-" + norm.id + "-verified");
     }
 
     record.updatedAt = new Date().toISOString();
@@ -558,7 +654,17 @@ export async function saveCaseVerifiedEvidence(
   }
 
   try {
-    const { error: evError } = await client.from("evidence").upsert({
+    if (!(await isUserCaseMember(caseId, user.id, client))) {
+      return { persisted: false, confirmedFieldCount: 0 };
+    }
+    const writeClient = getSupabaseServiceRoleClient();
+    if (!writeClient) {
+      console.error("saveCaseVerifiedEvidence requires the server-side Supabase key for real cases.");
+      return { persisted: false, confirmedFieldCount: 0 };
+    }
+
+    const verifiedAt = new Date().toISOString();
+    const { error: evError } = await writeClient.from("evidence").upsert({
       id: norm.id,
       incident_id: caseId,
       type: norm.type,
@@ -577,27 +683,36 @@ export async function saveCaseVerifiedEvidence(
     });
     if (evError) throw evError;
 
-    if (norm.candidateFields.length > 0) {
-      const factRows = norm.candidateFields.map((field) => ({
+    const { error: clearFactsError } = await writeClient
+      .from("facts")
+      .delete()
+      .eq("incident_id", caseId)
+      .eq("evidence_id", norm.id);
+    if (clearFactsError) throw clearFactsError;
+
+    if (confirmedFields.length > 0) {
+      const factRows = confirmedFields.map((field) => ({
         incident_id: caseId,
         evidence_id: norm.id,
         field_key: normaliseFieldKey(field.fieldKey, field.label),
         fact_type: field.label,
         value: { text: field.value },
-        source: field.verificationStatus === "confirmed" ? "Citizen confirmed from evidence" : field.source,
+        source: "Citizen confirmed from evidence",
         confidence: null,
-        verification_status: field.verificationStatus ?? "candidate",
-        verified_at: field.verificationStatus === "confirmed" ? new Date().toISOString() : null,
+        verification_status: "confirmed",
+        verified_at: verifiedAt,
         provenance: {
+          ...(field.provenance ?? {}),
           evidenceId: norm.id,
-          extractionSource: field.source,
-          verification: field.verificationStatus,
+          origin: "citizen",
+          verifiedAt,
+          verification: "confirmed",
         },
         is_demo: false,
         created_by: user.id,
       }));
 
-      const { error: factsError } = await client
+      const { error: factsError } = await writeClient
         .from("facts")
         .upsert(factRows, { onConflict: "incident_id,evidence_id,field_key" });
       if (factsError) throw factsError;
@@ -620,7 +735,7 @@ export async function saveCaseVerifiedEvidence(
     if (amount || ref || date || time) {
       const eventKey = `evidence-${norm.id}-verified`;
       const timePrecision = date && time ? "exact" : date ? "date" : time ? "approximate" : "unknown";
-      const { error: tlError } = await client.from("timeline_events").upsert(
+      const { error: tlError } = await writeClient.from("timeline_events").upsert(
         {
           incident_id: caseId,
           event_key: eventKey,
@@ -639,7 +754,7 @@ export async function saveCaseVerifiedEvidence(
       );
       if (tlError) throw tlError;
     } else {
-      const { error: staleTimelineError } = await client
+      const { error: staleTimelineError } = await writeClient
         .from("timeline_events")
         .delete()
         .eq("incident_id", caseId)
@@ -674,7 +789,7 @@ export async function submitCaseReport(
     const record = getMockCase(caseId);
     if (!record) throw new Error("Case not found");
 
-    record.complaintText = complaintText;
+    record.complaintText = redactSensitiveText(complaintText);
     record.acknowledgementId = acknowledgementId;
     record.status = "submitted";
     record.updatedAt = now;
@@ -683,18 +798,25 @@ export async function submitCaseReport(
   }
 
   try {
-    const { error: incError } = await client
+    if (!(await isUserCaseMember(caseId, user.id, client))) {
+      throw new Error("Unauthorized to submit this case");
+    }
+    const writeClient = getSupabaseServiceRoleClient();
+    if (!writeClient) throw new Error("Private case persistence requires a configured server-side Supabase key.");
+    const safeComplaintText = redactSensitiveText(complaintText);
+
+    const { error: incError } = await writeClient
       .from("incidents")
       .update({ status: "submitted", updated_at: now })
       .eq("id", caseId);
     if (incError) throw incError;
 
-    const { data: complaint, error: compError } = await client
+    const { data: complaint, error: compError } = await writeClient
       .from("complaints")
       .upsert(
         {
           incident_id: caseId,
-          complaint_text: complaintText,
+          complaint_text: safeComplaintText,
           status: "submitted",
           acknowledgement_id: acknowledgementId,
           is_demo: false,
@@ -708,7 +830,7 @@ export async function submitCaseReport(
 
     if (compError || !complaint) throw compError;
 
-    const { error: eventError } = await client.from("complaint_events").upsert(
+    const { error: eventError } = await writeClient.from("complaint_events").upsert(
       [
         {
           complaint_id: complaint.id,

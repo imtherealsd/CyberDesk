@@ -1,6 +1,6 @@
 # CyberDesk Security Hardening
 
-Updated: 28 August 2026
+Updated: 29 August 2026
 
 CyberDesk is an independent incident-organization tool. It is not an official Government of India portal, an FIR filing system, a police investigation system, a bank reversal service, or a replacement for cybercrime.gov.in. The target of this milestone is a secure authenticated alpha foundation, not production readiness.
 
@@ -38,16 +38,16 @@ auth.users
 
 Real incidents have `is_demo = false`, `demo_key = null`, and `created_by` bound to the authenticated user. An after-insert trigger creates the owner membership. Child records carry the case foreign key and, where applicable, the authenticated creator. Case identity fields cannot be changed after creation.
 
-The live ownership migration is `user_case_ownership`, followed by `storage_case_policies`. No duplicate `cases` table was introduced.
+The ownership migrations are `user_case_ownership`, `storage_case_policies`, and `trust_boundary_hardening`. No duplicate `cases` table was introduced.
 
 ## RLS model
 
 RLS is enabled on `profiles`, `case_members`, `incidents`, `evidence`, `facts`, `timeline_events`, `complaints`, and `complaint_events`.
 
 - Anonymous access is limited to the synthetic demo rows and required demo writes.
-- Authenticated real-case reads and writes require membership through a server-side SECURITY DEFINER helper that uses the current `auth.uid()`; the helper does not accept a caller-supplied user ID.
+- Authenticated real-case reads require membership through a server-side SECURITY DEFINER helper that uses the current `auth.uid()`; real mutations are server-only after API membership and role checks.
 - Only owners can add/remove case members and delete real case records. A user cannot self-join an arbitrary incident UUID.
-- Real inserts bind `created_by` to `auth.uid()` where the table has that column.
+- Private API writes use the server-only service-role client only after the request has passed authentication, case membership, and capability checks.
 - Demo/real identity flags are protected by database triggers and RLS checks.
 - `complaint_events` has no authenticated update/delete grant.
 
@@ -63,12 +63,12 @@ Case objects use:
 cases/<incident UUID>/<evidence UUID>/<sanitised filename>
 ```
 
-Authenticated Storage object policies require the fixed path shape and membership in the incident UUID. Anonymous storage policies do not exist. Application uploads use the server-only service-role client only after the case API has authorized the request; no public or unnecessary signed URL is produced. Filename input is sanitized and the application validates extension, normalized MIME type, and size before upload.
+Authenticated Storage object policies require the exact path shape, an evidence UUID, the matching evidence row, and membership in the incident UUID. Viewers can read matching objects, while direct object writes require owner/collaborator capability. Anonymous storage policies do not exist. Application uploads use the server-only service-role client only after the case API has authorized the request; no public or unnecessary signed URL is produced. Filename input is sanitized and the application validates extension, normalized MIME type, and size before upload.
 
 ## API authorization
 
 - `GET/POST /api/cases` requires authentication.
-- `/api/cases/[id]` and all case evidence/report routes require authentication, UUID validation, and case membership before case-scoped work.
+- `/api/cases/[id]` and all case evidence/report routes require authentication, UUID validation, and case membership before case-scoped work; evidence/report mutations additionally require owner or collaborator capability.
 - Inaccessible or malformed case IDs return a generic 404 where enumeration resistance is useful.
 - Legacy `/api/evidence/*` and `/api/reports/submit` remain public only for the synthetic demo journey. They reject authenticated requests so they cannot be used as a private-case bypass.
 - `/api/demo-case` is read-only public demo access.
@@ -84,25 +84,22 @@ Uploaded content is untrusted input. OpenAI extraction is server-side, schema-va
 
 ## Verification performed
 
-- Live Supabase project inspected before and after migration.
-- Ownership migration applied as `user_case_ownership`.
-- Storage policy migration applied as `storage_case_policies`.
-- Live bucket verified private, 5 MB limited, and MIME restricted.
-- Live RLS policies inspected for all case tables and `storage.objects`.
-- TypeScript, ESLint, production build, and Playwright regression/security tests pass locally; two production-auth tests are intentionally skipped unless a separately started production URL is supplied.
-- Local tests exercise unauthenticated denial, same-user access, cross-user API denial under the test harness, malformed-ID 404s, legacy demo endpoint isolation, demo journey, and forged-header behavior in the isolated harness.
+- The ownership, storage, and trust-boundary migrations were reviewed as repository source; applying them to a live Supabase project is an operator/deployment step outside this local verification.
+- The migration source defines a private bucket, 5 MB limit, MIME restrictions, case/evidence path checks, and the RLS/grant changes described above.
+- TypeScript, production build, and Playwright regression/security tests pass locally; two production-auth tests are intentionally skipped unless a separately started production URL is supplied.
+- Local tests exercise unauthenticated denial, same-user access, cross-user API denial under the isolated test harness, malformed-ID 404s, legacy demo endpoint isolation, demo journey, candidate/rejected fact exclusion, fabricated-field rejection, sensitive-number filtering, redirect validation, and failed-extraction UI messaging.
 
-The current environment does not provide two real Supabase Auth user sessions for a non-simulated cross-user integration run. Therefore live JWT-to-JWT RLS and Storage cross-user attempts remain required before alpha onboarding. Do not treat the local mock test headers as evidence of live RLS enforcement.
+The current environment does not provide two real Supabase Auth user sessions for a non-simulated cross-user integration run. Therefore live JWT-to-JWT RLS and Storage cross-user attempts remain required before alpha onboarding. Do not treat the local mock test headers as evidence of live RLS enforcement. The migration-defined real-case mutation boundary also requires `SUPABASE_SERVICE_ROLE_KEY` in the deployment.
 
 ## Known limitations / next gate
 
 1. Run the documented real-Auth adversarial matrix with two disposable Supabase users and direct PostgREST/Storage requests.
 2. Move authorization predicates to a non-exposed private schema or otherwise resolve the Supabase SECURITY DEFINER advisor warnings.
 3. Add rate limiting, audit logging, retention/deletion policy, malware scanning, content sniffing, and operational secret rotation before real citizen PII.
-4. Review collaborator/viewer write permissions before enabling collaboration; the UI does not expose collaboration in this milestone.
+4. Keep collaboration management limited to owner-controlled membership operations; the current UI does not expose collaboration invitations.
 
 ### Alpha readiness status
 
 Secure authenticated alpha foundation: **CONDITIONAL PASS**.
 
-The P0 application bypass and self-join policy are fixed, live RLS/storage boundaries are present, and local regression coverage passes. Proceed only with disposable/synthetic data until live two-user Auth/Storage adversarial verification and the remaining production controls are complete.
+The application bypass and self-join policy are fixed, migration-defined RLS/storage boundaries are present, and local regression coverage passes. Proceed only with disposable/synthetic data until live two-user Auth/Storage adversarial verification and the remaining production controls are complete.

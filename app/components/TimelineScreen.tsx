@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import type { TimelineEvent as TimelineEventType } from "@/lib/types";
-import { en } from "@/lib/i18n/en";
+import { useI18n } from "@/lib/i18n";
 import { TimelineEvent } from "./TimelineEvent";
 
 export interface TimelineScreenProps {
@@ -17,6 +17,7 @@ export function TimelineScreen({
   onContinue,
 }: TimelineScreenProps) {
   const [localEvents, setLocalEvents] = useState<TimelineEventType[]>(events);
+  const { t } = useI18n();
 
   function handleSaveEvent(index: number, newTitle: string, newDetail: string) {
     setLocalEvents((current) =>
@@ -28,20 +29,20 @@ export function TimelineScreen({
 
   return (
     <div className="step-panel timeline-panel">
-      <p className="lead">{en.timeline.lead}</p>
+      <p className="lead">{t.timeline.lead}</p>
 
       <div className="timeline-legend">
         <span className="tl-legend-item">
-          <span className="tl-badge badge-citizen">{en.timeline.legendCitizen}</span>
-          {en.timeline.legendCitizenDesc}
+          <span className="tl-badge badge-citizen">{t.timeline.legendCitizen}</span>
+          {t.timeline.legendCitizenDesc}
         </span>
         <span className="tl-legend-item">
-          <span className="tl-badge badge-synthetic">{en.timeline.legendSynthetic}</span>
-          {en.timeline.legendSyntheticDesc}
+          <span className="tl-badge badge-synthetic">{t.timeline.legendSynthetic}</span>
+          {t.timeline.legendSyntheticDesc}
         </span>
         <span className="tl-legend-item">
-          <span className="tl-badge badge-ai">{en.timeline.legendAi}</span>
-          {en.timeline.legendAiDesc}
+          <span className="tl-badge badge-ai">{t.timeline.legendAi}</span>
+          {t.timeline.legendAiDesc}
         </span>
       </div>
 
@@ -59,19 +60,20 @@ export function TimelineScreen({
 
       <div className="next-action">
         <div>
-          <span className="eyebrow">{en.timeline.nextActionEyebrow}</span>
-          <strong>{en.timeline.nextActionTitle}</strong>
-          <p>{en.timeline.nextActionDesc}</p>
+          <span className="eyebrow">{t.timeline.nextActionEyebrow}</span>
+          <strong>{t.timeline.nextActionTitle}</strong>
+          <p>{t.timeline.nextActionDesc}</p>
         </div>
         <div className="action-buttons">
           <button type="button" className="secondary-button" onClick={onBack}>
-            {en.common.back}
+            {t.common.back}
           </button>
           <button type="button" className="primary-button" onClick={onContinue}>
-            {en.timeline.continueButton} <span aria-hidden="true">→</span>
+            {t.timeline.continueButton} <span aria-hidden="true">→</span>
           </button>
         </div>
       </div>
     </div>
   );
 }
+

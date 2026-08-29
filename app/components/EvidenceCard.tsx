@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { en } from "@/lib/i18n/en";
+import { useI18n } from "@/lib/i18n";
 import type { CandidateField } from "@/lib/types";
 import { SourceBadge } from "./SourceBadge";
 
@@ -16,6 +16,7 @@ export interface EvidenceCardProps {
 export function EvidenceCard({ field, onSave, onAccept, onRemove, onRestore }: EvidenceCardProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [draftValue, setDraftValue] = useState(field.value);
+  const { t } = useI18n();
 
   function handleStartEdit() {
     setDraftValue(field.value);
@@ -33,18 +34,18 @@ export function EvidenceCard({ field, onSave, onAccept, onRemove, onRestore }: E
   }
 
   const hint =
-    en.evidence.hints[field.label as keyof typeof en.evidence.hints] ??
-    en.evidence.hints.default;
+    t.evidence.hints[field.label as keyof typeof t.evidence.hints] ??
+    t.evidence.hints.default;
 
   if (field.verificationStatus === "rejected") {
     return (
       <div className="evidence-field-card evidence-field-rejected">
         <div>
           <span className="evidence-field-label">{field.label}</span>
-          <p>This suggestion was removed from the incident record.</p>
+          <p>{t.evidence.statusRejected}</p>
         </div>
         <button type="button" className="inline-button" onClick={() => onRestore(field)}>
-          Restore
+          {t.common.edit}
         </button>
       </div>
     );
@@ -60,7 +61,7 @@ export function EvidenceCard({ field, onSave, onAccept, onRemove, onRestore }: E
           <SourceBadge source={isConfirmed ? "citizen" : field.source} />
           {isConfirmed && (
             <span className="status-chip status-chip-confirmed" style={{ fontSize: "0.72rem", padding: "2px 8px" }}>
-              ✓ Confirmed
+              ✓ {t.evidence.statusVerifiedFact}
             </span>
           )}
         </div>
@@ -72,14 +73,14 @@ export function EvidenceCard({ field, onSave, onAccept, onRemove, onRestore }: E
                 className="inline-button"
                 onClick={handleSave}
               >
-                {en.common.save}
+                {t.common.save}
               </button>
               <button
                 type="button"
                 className="inline-button"
                 onClick={handleCancel}
               >
-                {en.common.cancel}
+                {t.common.cancel}
               </button>
             </>
           ) : (
@@ -90,7 +91,7 @@ export function EvidenceCard({ field, onSave, onAccept, onRemove, onRestore }: E
                   className="inline-button inline-button-confirm"
                   onClick={() => onAccept(field)}
                 >
-                  Accept
+                  {t.evidence.acceptBtn}
                 </button>
               )}
               <button
@@ -98,14 +99,14 @@ export function EvidenceCard({ field, onSave, onAccept, onRemove, onRestore }: E
                 className="inline-button"
                 onClick={handleStartEdit}
               >
-                {en.common.edit}
+                {t.common.edit}
               </button>
               <button
                 type="button"
                 className="inline-button"
                 onClick={() => onRemove(field)}
               >
-                {en.common.remove}
+                {t.common.remove}
               </button>
             </>
           )}
@@ -115,7 +116,7 @@ export function EvidenceCard({ field, onSave, onAccept, onRemove, onRestore }: E
       <div className="evidence-field-value">
         {isEditing ? (
           <input
-            aria-label={`Edit ${field.label}`}
+            aria-label={`${t.common.edit} ${field.label}`}
             value={draftValue}
             onChange={(e) => setDraftValue(e.target.value)}
           />
@@ -126,8 +127,9 @@ export function EvidenceCard({ field, onSave, onAccept, onRemove, onRestore }: E
 
       <div className="evidence-field-hint">
         <span aria-hidden="true">ℹ</span>
-        <span>{isConfirmed ? "You confirmed this detail." : `What this may help confirm: ${hint}`}</span>
+        <span>{isConfirmed ? t.evidence.statusVerified : hint}</span>
       </div>
     </div>
   );
 }
+

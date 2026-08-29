@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import type { Interpretation, Urgency } from "@/lib/types";
-import { en } from "@/lib/i18n/en";
+import { useI18n } from "@/lib/i18n";
 
 export type InterpretationSource = "openai" | "demo_fallback";
 
@@ -23,6 +23,7 @@ export function UnderstandingScreen({
 }: UnderstandingScreenProps) {
   const [draft, setDraft] = useState<Interpretation>(interpretation);
   const [editing, setEditing] = useState(false);
+  const { t } = useI18n();
 
   const update = (field: keyof Interpretation, value: string | number | null) => {
     setDraft((current) => ({ ...current, [field]: value }));
@@ -46,35 +47,35 @@ export function UnderstandingScreen({
         <span className="spark" aria-hidden="true">✦</span>
         <div>
           <strong>
-            {isAi ? en.understanding.aiRibbonTitle : en.understanding.demoRibbonTitle}
+            {isAi ? t.understanding.aiRibbonTitle : t.understanding.demoRibbonTitle}
           </strong>
           <small>
-            {isAi ? en.understanding.aiRibbonSubtitle : en.understanding.demoRibbonSubtitle}
+            {isAi ? t.understanding.aiRibbonSubtitle : t.understanding.demoRibbonSubtitle}
           </small>
         </div>
       </div>
 
       <div className="understanding-grid">
         <InfoCard
-          label={en.understanding.cardLooksLike}
-          value={draft.incident_type ?? en.understanding.notEnoughInfo}
+          label={t.understanding.cardLooksLike}
+          value={draft.incident_type ?? t.understanding.notEnoughInfo}
           editing={editing}
           inputValue={draft.incident_type ?? ""}
           onInput={(val) => update("incident_type", val || null)}
         />
         <InfoCard
-          label={en.understanding.cardPossibleMethod}
-          value={draft.possible_method ?? en.understanding.notEnoughInfo}
+          label={t.understanding.cardPossibleMethod}
+          value={draft.possible_method ?? t.understanding.notEnoughInfo}
           editing={editing}
           inputValue={draft.possible_method ?? ""}
           onInput={(val) => update("possible_method", val || null)}
         />
         <InfoCard
-          label={en.understanding.cardFinancialImpact}
+          label={t.understanding.cardFinancialImpact}
           value={
             draft.amount
-              ? `₹${draft.amount.toLocaleString("en-IN")} mentioned`
-              : en.understanding.notMentioned
+              ? `₹${draft.amount.toLocaleString("en-IN")}`
+              : t.understanding.notMentioned
           }
           editing={editing}
           inputValue={draft.amount?.toString() ?? ""}
@@ -82,8 +83,8 @@ export function UnderstandingScreen({
           onInput={(val) => update("amount", val ? Number(val) : null)}
         />
         <InfoCard
-          label={en.understanding.cardUrgency}
-          value={draft.urgency === "high" ? en.understanding.actSoon : draft.urgency}
+          label={t.understanding.cardUrgency}
+          value={draft.urgency === "high" ? t.understanding.actSoon : draft.urgency}
           accent={draft.urgency === "high"}
           editing={editing}
           selectValue={draft.urgency}
@@ -93,7 +94,7 @@ export function UnderstandingScreen({
 
       <div className="split-block">
         <div>
-          <span className="eyebrow">{en.understanding.mentionedEyebrow}</span>
+          <span className="eyebrow">{t.understanding.mentionedEyebrow}</span>
           <ul className="compact-list">
             {draft.mentioned_evidence.map((item) => (
               <li key={item}>{item}</li>
@@ -101,7 +102,7 @@ export function UnderstandingScreen({
           </ul>
         </div>
         <div>
-          <span className="eyebrow">{en.understanding.unclearEyebrow}</span>
+          <span className="eyebrow">{t.understanding.unclearEyebrow}</span>
           <ul className="compact-list muted-list">
             {[...draft.missing_information, ...draft.uncertainties].map((item) => (
               <li key={item}>{item}</li>
@@ -114,13 +115,13 @@ export function UnderstandingScreen({
         <div>
           <strong>
             {editing
-              ? en.understanding.editBarTitleEditing
-              : en.understanding.editBarTitleNormal}
+              ? t.understanding.editBarTitleEditing
+              : t.understanding.editBarTitleNormal}
           </strong>
           <span>
             {editing
-              ? en.understanding.editBarDescEditing
-              : en.understanding.editBarDescNormal}
+              ? t.understanding.editBarDescEditing
+              : t.understanding.editBarDescNormal}
           </span>
         </div>
         <div className="action-buttons">
@@ -131,14 +132,14 @@ export function UnderstandingScreen({
                 className="secondary-button"
                 onClick={handleCancel}
               >
-                {en.common.cancel}
+                {t.common.cancel}
               </button>
               <button
                 type="button"
                 className="primary-button"
                 onClick={handleSaveCorrections}
               >
-                {en.understanding.saveCorrectionsButton}
+                {t.understanding.saveCorrectionsButton}
               </button>
             </>
           ) : (
@@ -148,21 +149,21 @@ export function UnderstandingScreen({
                 className="secondary-button"
                 onClick={onBack}
               >
-                {en.common.back}
+                {t.common.back}
               </button>
               <button
                 type="button"
                 className="secondary-button"
                 onClick={() => setEditing(true)}
               >
-                {en.understanding.editDetailsButton}
+                {t.understanding.editDetailsButton}
               </button>
               <button
                 type="button"
                 className="primary-button"
                 onClick={onConfirm}
               >
-                {en.understanding.confirmButton} <span aria-hidden="true">→</span>
+                {t.understanding.confirmButton} <span aria-hidden="true">→</span>
               </button>
             </>
           )}
@@ -222,3 +223,4 @@ function InfoCard({
     </div>
   );
 }
+

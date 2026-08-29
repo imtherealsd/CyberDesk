@@ -2,6 +2,7 @@
 
 import React from "react";
 import type { EvidenceItem, Interpretation, JourneyStep } from "@/lib/types";
+import { useI18n } from "@/lib/i18n";
 
 export interface IncidentDossierHUDProps {
   currentStep: JourneyStep;
@@ -16,6 +17,8 @@ export function IncidentDossierHUD({
   evidence,
   onNavigate,
 }: IncidentDossierHUDProps) {
+  const { t } = useI18n();
+
   // Only show the dossier HUD during active incident construction steps
   const showHUD = [
     "understanding",
@@ -32,25 +35,25 @@ export function IncidentDossierHUD({
   const isEvidenceConfirmed = evidence?.verificationStatus === "confirmed";
 
   return (
-    <div className="incident-dossier-hud" role="region" aria-label="Incident Record Workspace">
+    <div className="incident-dossier-hud" role="region" aria-label={t.dossierHud.badge}>
       <div className="dossier-hud-top">
         <div className="dossier-meta">
-          <span className="dossier-tag">Incident Record</span>
-          <span className="dossier-id">CYB-DEMO-84A21</span>
-          <span className="dossier-status-pill">Synthetic Demo Case</span>
+          <span className="dossier-tag">{t.dossierHud.badge}</span>
+          <span className="dossier-id font-mono">CYB-DEMO-84A21</span>
+          <span className="dossier-status-pill">{t.dossierHud.underReview}</span>
         </div>
         <div className="dossier-provenance-stats">
           <span className="prov-stat stat-citizen">
             <span className="dot" aria-hidden="true" />
-            <span>Citizen facts: <strong>{hasInterpretation ? "2" : "0"}</strong></span>
+            <span>{t.evidence.provenanceCitizen}: <strong>{hasInterpretation ? "2" : "0"}</strong></span>
           </span>
           <span className="prov-stat stat-ai">
             <span className="dot" aria-hidden="true" />
-            <span>AI suggestions: <strong>{hasInterpretation ? "1" : "0"}</strong></span>
+            <span>{t.evidence.provenanceAi}: <strong>{hasInterpretation ? "1" : "0"}</strong></span>
           </span>
           <span className="prov-stat stat-demo">
             <span className="dot" aria-hidden="true" />
-            <span>Demo artifacts: <strong>{hasEvidence ? "1" : "0"}</strong></span>
+            <span>{t.evidence.provenanceDemo}: <strong>{hasEvidence ? "1" : "0"}</strong></span>
           </span>
         </div>
       </div>
@@ -64,9 +67,9 @@ export function IncidentDossierHUD({
         >
           <span className="pillar-num">01</span>
           <div className="pillar-info">
-            <strong className="pillar-name">Understand</strong>
+            <strong className="pillar-name">{t.journey.steps[1].label}</strong>
             <span className="pillar-state">
-              {hasInterpretation ? "Details captured" : "In progress"}
+              {hasInterpretation ? t.dossierHud.verified : t.common.loading}
             </span>
           </div>
         </button>
@@ -79,8 +82,8 @@ export function IncidentDossierHUD({
         >
           <span className="pillar-num">02</span>
           <div className="pillar-info">
-            <strong className="pillar-name">Next Steps</strong>
-            <span className="pillar-state">1930 & Bank actions</span>
+            <strong className="pillar-name">{t.journey.steps[2].label}</strong>
+            <span className="pillar-state">1930 &amp; {t.entry.dossierPreview.actionBank}</span>
           </div>
         </button>
 
@@ -92,13 +95,13 @@ export function IncidentDossierHUD({
         >
           <span className="pillar-num">03</span>
           <div className="pillar-info">
-            <strong className="pillar-name">Evidence</strong>
+            <strong className="pillar-name">{t.journey.steps[3].label}</strong>
             <span className="pillar-state">
               {isEvidenceConfirmed
-                ? "Verified facts ready"
+                ? t.dossierHud.verified
                 : hasEvidence
-                ? "Candidate item ready"
-                : "Awaiting items"}
+                ? t.evidence.fieldSourceBadge
+                : t.evidence.emptyTitle}
             </span>
           </div>
         </button>
@@ -111,9 +114,9 @@ export function IncidentDossierHUD({
         >
           <span className="pillar-num">04</span>
           <div className="pillar-info">
-            <strong className="pillar-name">Timeline</strong>
+            <strong className="pillar-name">{t.journey.steps[4].label}</strong>
             <span className="pillar-state">
-              {isEvidenceConfirmed ? "Ordered events ready" : "Pending verification"}
+              {isEvidenceConfirmed ? t.dossierHud.verified : t.understanding.unclearEyebrow}
             </span>
           </div>
         </button>
@@ -121,3 +124,4 @@ export function IncidentDossierHUD({
     </div>
   );
 }
+

@@ -1,8 +1,13 @@
+"use client";
+
 import Link from "next/link";
+import { useI18n } from "@/lib/i18n";
 import { PublicNav } from "@/app/components/PublicNav";
 import { PublicFooter } from "@/app/components/PublicFooter";
 
 export default function NotFound() {
+  const { t } = useI18n();
+
   return (
     <div className="not-found-page">
       <PublicNav />
@@ -18,22 +23,21 @@ export default function NotFound() {
             </span>
           </div>
 
-          <p className="not-found-code" aria-hidden="true">404</p>
-          <h1 className="not-found-title">Page not found</h1>
+          <p className="not-found-code font-mono" aria-hidden="true">404</p>
+          <h1 className="not-found-title">{t.notFound.title}</h1>
           <p className="not-found-desc">
-            This page doesn&apos;t exist or may have been moved. If you were looking for a specific
-            incident workspace, please sign in and check your Cases.
+            {t.notFound.desc}
           </p>
 
           <div className="not-found-actions">
             <Link href="/" className="primary-button">
-              ← Return home
+              ← {t.notFound.returnHome}
             </Link>
             <Link href="/cases" className="secondary-button">
-              My Cases
+              {t.notFound.myCases}
             </Link>
             <Link href="/how-it-works" className="secondary-button">
-              How it works
+              {t.notFound.howItWorks}
             </Link>
           </div>
 
@@ -48,19 +52,19 @@ export default function NotFound() {
             color: "var(--muted)",
             lineHeight: 1.55,
           }}>
-            <strong style={{ color: "var(--ink)" }}>Responding to cyber fraud?</strong>{" "}
-            Call{" "}
+            <strong style={{ color: "var(--ink)" }}>{t.notFound.respondingTitle}</strong>{" "}
+            {t.notFound.callText}{" "}
             <a href="tel:1930" style={{ color: "var(--teal-dark)", fontWeight: 700 }}>1930</a>
-            {" "}(National Cyber Crime Helpline) or visit{" "}
+            {" "}({t.notFound.helplineName}) {t.notFound.orVisitText}{" "}
             <a
               href="https://cybercrime.gov.in"
               target="_blank"
               rel="noopener noreferrer"
               style={{ color: "var(--teal-dark)", fontWeight: 600 }}
             >
-              cybercrime.gov.in
+              {t.notFound.portalText}
             </a>
-            {" "}to file an official report.
+            {" "}{t.notFound.toFileText}
           </div>
         </div>
       </main>
@@ -69,3 +73,5 @@ export default function NotFound() {
     </div>
   );
 }
+
+

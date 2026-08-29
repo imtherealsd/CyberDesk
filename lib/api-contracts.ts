@@ -65,4 +65,22 @@ export const evidenceContentSchema = z.object({
   mimeType: z.string().max(100).optional(),
 }).strict();
 
+const statusEventSchema = z.union([
+  z.string().trim().max(300),
+  z.object({
+    status: z.string().trim().max(80),
+    at: z.string().trim().max(100),
+    description: z.string().trim().max(300),
+  }).strict(),
+]);
+
+export const statusExplanationRequestSchema = z.object({
+  status: z.enum(["draft", "submitted", "information_received", "under_review"]).optional(),
+  status_label: z.string().trim().max(120).optional(),
+  case_id: z.string().trim().max(160).optional(),
+  last_updated: z.string().trim().max(120).optional(),
+  prior_events: z.array(statusEventSchema).max(20).optional(),
+  verified_context: z.array(z.string().trim().max(300)).max(20).optional(),
+}).strict();
+
 export { candidateFieldSchema, evidenceCategorySchema };

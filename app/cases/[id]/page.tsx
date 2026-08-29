@@ -4,6 +4,7 @@ import { use, useEffect, useState, useMemo, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
+import { useI18n } from "@/lib/i18n";
 import { PublicNav } from "@/app/components/PublicNav";
 import { PublicFooter } from "@/app/components/PublicFooter";
 import { EvidenceScreen } from "@/app/components/EvidenceScreen";
@@ -11,11 +12,13 @@ import { TimelineScreen } from "@/app/components/TimelineScreen";
 import { ReviewScreen } from "@/app/components/ReviewScreen";
 import { TrackingScreen } from "@/app/components/TrackingScreen";
 import { getNormalisedMimeType, normaliseEvidence } from "@/lib/evidence";
+import { getExtractionContent } from "@/lib/evidence-content";
 import type {
   CaseDetail,
   DemoCase,
   EvidenceCategory,
   EvidenceItem,
+  IncidentDossier,
   Interpretation,
   StatusExplanation,
   TimelineEvent,
@@ -28,6 +31,7 @@ export default function CaseWorkspacePage(props: {
 }) {
   const { id: caseId } = use(props.params);
   const { user, isLoading, authFetch } = useAuth();
+  const { t } = useI18n();
   const [caseDetail, setCaseDetail] = useState<CaseDetail | null>(null);
   const [activeTab, setActiveTab] = useState<WorkspaceTab>("overview");
   const [loading, setLoading] = useState(true);
@@ -51,7 +55,7 @@ export default function CaseWorkspacePage(props: {
       }
       if (response.status === 403 || response.status === 404) {
         setUnauthorized(true);
-        setError("You do not have access to this case workspace or it does not exist.");
+        setError(t.common.unauthorizedMessage);
         return;
       }
       const data = await response.json();
@@ -64,7 +68,7 @@ export default function CaseWorkspacePage(props: {
     } finally {
       setLoading(false);
     }
-  }, [authFetch, caseId, router]);
+  }, [authFetch, caseId, router, t.common.unauthorizedMessage]);
 
   useEffect(() => {
     if (!isLoading && !user) {
@@ -99,128 +103,204 @@ export default function CaseWorkspacePage(props: {
       status: caseDetail.status,
       statusLabel: caseDetail.statusLabel,
       updatedAt: caseDetail.updatedAt,
+      incidentType: caseDetail.incidentType,
+      urgency: caseDetail.urgency,
+      evidenceCount: caseDetail.evidence.length,
+      verifiedFactCount: caseDetail.evidence.flatMap((ev) =>
+        ev.candidateFields.filter((f) => f.verificationStatus === "confirmed")
+      ).length,
     };
   }, [caseDetail]);
 
-  const verifiedFacts = useMemo(() => {
-    if (!caseDetail?.facts) return [];
-    return caseDetail.facts
-      .filter((f) => f.verificationStatus === "confirmed")
-      .map((f) => `${f.label}: ${f.value}`);
-  }, [caseDetail?.facts]);
-
-  const timelineEvents: TimelineEvent[] = useMemo(() => {
-    if (caseDetail?.timeline && caseDetail.timeline.length > 0) {
-      return caseDetail.timeline;
-    }
-    return [
-      {
-        time: "",
-        timeLabel: "Report Created",
-        timePrecision: "date",
-        title: caseDetail?.incidentType || "Incident Created",
-        detail: caseDetail?.description || "Workspace created by citizen.",
-        source: "Citizen narrative",
-      },
-    ];
+  // Verified facts array
+  const verifiedFacts: string[] = useMemo(() => {
+    if (!caseDetail) return [];
+    const facts: string[] = [];
+    if (caseDetail.incidentType) facts.push(`Type: ${caseDetail.incidentType}`);
+    caseDetail.evidence.forEach((ev) => {
+      ev.candidateFields
+        .filter((f) => f.verificationStatus === "confirmed")
+        .forEach((f) => facts.push(`${f.label}: ${f.value}`));
+    });
+    return facts;
   }, [caseDetail]);
 
-  const incidentDossier = useMemo(() => ({
-    incidentSummary: caseDetail?.description || "",
-    verifiedFacts,
-    evidence: caseDetail?.evidence || [],
-    timeline: timelineEvents,
-    actions: ["Preserve digital communication", "Monitor bank accounts"],
-    caseStatus: caseDetail?.status || "draft",
-    disclosure: "Authenticated citizen workspace",
-  }), [caseDetail, verifiedFacts, timelineEvents]);
+  // Timeline events
+  const timelineEvents: TimelineEvent[] = useMemo(() => {
+    if (!caseDetail) return [];
+    const events: TimelineEvent[] = [];
 
+    events.push({
+      time: new Date(caseDetail.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+      timeLabel: "Incident logged",
+      title: "Incident Workspace Created",
+      detail: caseDetail.description,
+      source: "Citizen reported",
+    });
+
+    caseDetail.evidence.forEach((ev) => {
+      ev.candidateFields
+        .filter((f) => f.verificationStatus === "confirmed")
+        .forEach((f) => {
+          events.push({
+            time: "Verified",
+            timeLabel: "Fact",
+            title: `Confirmed: ${f.label}`,
+            detail: `${f.label}: ${f.value}`,
+            source: "Evidence-derived",
+          });
+        });
+    });
+
+    if (caseDetail.status === "submitted") {
+      events.push({
+        time: new Date(caseDetail.updatedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+        timeLabel: "Report Finalized",
+        title: "Incident Report Finalized",
+        detail: "Report was reviewed and prepared for external filing with bank and cyber authorities.",
+        source: "Citizen verified",
+      });
+    }
+
+    return events;
+  }, [caseDetail]);
+
+  // Incident Dossier representation
+  const incidentDossier: IncidentDossier = useMemo(() => {
+    return {
+      incidentSummary: caseDetail?.description || "",
+      evidence: caseDetail?.evidence || [],
+      timeline: timelineEvents,
+      verifiedFacts,
+      actions: ["Preserve digital communication", "Monitor bank accounts"],
+      caseStatus: caseDetail?.status || "draft",
+      disclosure: "Authenticated citizen workspace",
+    };
+  }, [caseDetail, timelineEvents, verifiedFacts]);
+
+  // Upload evidence file
   async function uploadEvidenceFile(file: File, category: EvidenceCategory) {
+    if (!caseDetail) return;
     setBusy("upload");
     setError("");
+
+    let uploadedEvidence: EvidenceItem | null = null;
     try {
-      const form = new FormData();
-      form.append("file", file);
-      form.append("category", category);
-      const uploadResponse = await authFetch(`/api/cases/${caseId}/evidence/upload`, {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("category", category);
+
+      const response = await authFetch(`/api/cases/${caseId}/evidence/upload`, {
         method: "POST",
-        body: form,
+        body: formData,
       });
-      const uploadData = await uploadResponse.json();
-      if (!uploadResponse.ok) throw new Error(uploadData.error ?? "Failed to upload file.");
 
-      setNotice("Evidence file securely stored. CyberDesk is extracting candidate details…");
-      setBusy("extract");
-
-      let contentData = "";
-      const mimeType = getNormalisedMimeType(file.name, file.type);
-      if (file.type === "text/plain" || file.name.endsWith(".txt")) {
-        contentData = (await file.text()).slice(0, 60000);
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error ?? "Upload failed");
+      if (data.metadataPersisted !== true) {
+        throw new Error("Evidence metadata could not be saved, so analysis was not started.");
       }
 
-      const extractResponse = await authFetch(`/api/cases/${caseId}/evidence/extract`, {
+      uploadedEvidence = normaliseEvidence(data.evidence as EvidenceItem);
+      setCaseDetail((previous) => previous ? {
+        ...previous,
+        evidence: previous.evidence.some((item) => item.id === uploadedEvidence?.id)
+          ? previous.evidence.map((item) => item.id === uploadedEvidence?.id ? uploadedEvidence as EvidenceItem : item)
+          : [uploadedEvidence as EvidenceItem, ...previous.evidence],
+      } : previous);
+
+      setBusy("extract");
+      const extractionResponse = await authFetch(`/api/cases/${caseId}/evidence/extract`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          evidence: uploadData.evidence,
-          content: contentData ? { kind: "text", data: contentData, mimeType } : undefined,
+          evidence: uploadedEvidence,
+          content: await getExtractionContent(file, getNormalisedMimeType(file.name, file.type)),
         }),
       });
-      const extractData = await extractResponse.json();
-      if (!extractResponse.ok) throw new Error(extractData.error ?? "Failed to extract evidence details.");
+      const extractionData = await extractionResponse.json();
+      if (!extractionResponse.ok) throw new Error(extractionData.error ?? "Could not analyze evidence.");
+      if (extractionData.metadataPersisted !== true) {
+        throw new Error("Evidence was uploaded, but its analysis could not be saved.");
+      }
 
-      setNotice("AI extracted candidate fields. Please review and confirm them.");
+      const storageNotice = uploadedEvidence.uploadStatus === "uploaded"
+        ? ""
+        : " No private cloud copy exists for this session.";
+      setNotice(
+        (extractionData.extraction?.source === "openai"
+          ? "Evidence analyzed. Review the untrusted candidate details before confirming."
+          : "Evidence analyzed with the deterministic fallback. Review every candidate detail before confirming.") + storageNotice
+      );
       await fetchCase();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Evidence processing failed.");
+      setError(err instanceof Error ? err.message : "Evidence upload failed.");
+      if (uploadedEvidence) {
+        setCaseDetail((previous) => previous ? {
+          ...previous,
+          evidence: previous.evidence.map((item) => item.id === uploadedEvidence?.id
+            ? { ...item, extractionStatus: "failed", extractionNotes: "Evidence was uploaded, but analysis did not complete." }
+            : item),
+        } : previous);
+      }
     } finally {
       setBusy(null);
     }
   }
 
+  // Verify and confirm evidence fields
   async function handleVerifyEvidence() {
-    if (!activeEvidence || !caseDetail) return;
+    if (!caseDetail || !activeEvidence) {
+      setActiveTab("timeline");
+      return;
+    }
     setBusy("verify");
     setError("");
     try {
+      // Mark all non-rejected fields as confirmed before sending
+      const verifiedAt = new Date().toISOString();
       const verifiedEvidence: EvidenceItem = {
         ...activeEvidence,
         verificationStatus: "confirmed",
         candidateFields: activeEvidence.candidateFields.map((field) =>
           field.verificationStatus === "rejected"
             ? field
-            : { ...field, verificationStatus: "confirmed" }
+            : {
+                ...field,
+                verificationStatus: "confirmed",
+                provenance: field.provenance
+                  ? { ...field.provenance, origin: "citizen" as const, verifiedAt }
+                  : undefined,
+              }
         ),
       };
 
       const response = await authFetch(`/api/cases/${caseId}/evidence/verify`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          interpretation,
-          evidence: verifiedEvidence,
-        }),
+        body: JSON.stringify({ interpretation, evidence: verifiedEvidence }),
       });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error ?? "Failed to verify evidence details.");
 
-      setNotice("Evidence confirmed! Details have been added to the case timeline.");
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error ?? "Could not verify evidence.");
+
+      setNotice(`Evidence verified — ${data.confirmedFieldCount ?? 0} facts confirmed.`);
       await fetchCase();
       setActiveTab("timeline");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Verification failed.");
+      setError(err instanceof Error ? err.message : "Could not verify evidence.");
+      setActiveTab("timeline");
     } finally {
       setBusy(null);
     }
   }
 
+  // Submit report
   async function handleSubmitReport() {
-    if (!complaintText.trim()) {
-      setError("Please review and write your report summary before submitting.");
-      return;
-    }
+    if (!caseDetail) return;
     setBusy("submit");
     setError("");
+
     try {
       const response = await authFetch(`/api/cases/${caseId}/reports/submit`, {
         method: "POST",
@@ -229,14 +309,15 @@ export default function CaseWorkspacePage(props: {
           complaintText: complaintText.trim(),
         }),
       });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error ?? "Failed to submit report.");
 
-      setNotice(`Report prepared and submitted with reference ${data.acknowledgementId}.`);
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error ?? "Failed to finalize report");
+
+      setNotice(t.workspace.reportSubmittedNotice);
       await fetchCase();
       setActiveTab("tracking");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Report submission failed.");
+      setError(err instanceof Error ? err.message : "Could not submit report.");
     } finally {
       setBusy(null);
     }
@@ -244,10 +325,10 @@ export default function CaseWorkspacePage(props: {
 
   if (loading) {
     return (
-      <div className="public-page-wrapper">
+      <div className="workspace-page">
         <PublicNav />
-        <main className="public-content-container" style={{ minHeight: "50vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <p style={{ color: "var(--muted)" }}>Loading workspace…</p>
+        <main id="main-content" className="workspace-main flex-center" style={{ minHeight: "40vh" }}>
+          <p style={{ color: "var(--muted)" }}>{t.common.loading}</p>
         </main>
         <PublicFooter />
       </div>
@@ -261,11 +342,11 @@ export default function CaseWorkspacePage(props: {
         <main className="public-content-container" style={{ maxWidth: "600px", margin: "60px auto" }}>
           <div className="error-box" role="alert" style={{ padding: "32px", textAlign: "center" }}>
             <h1 style={{ fontSize: "1.35rem", margin: "0 0 10px", color: "var(--coral)" }}>
-              Access Denied
+              {t.common.accessDenied}
             </h1>
             <p style={{ margin: "0 0 20px" }}>{error}</p>
             <Link href="/cases" className="primary-button" style={{ display: "inline-block" }}>
-              ← Return to My Cases
+              ← {t.nav.myCases}
             </Link>
           </div>
         </main>
@@ -281,12 +362,13 @@ export default function CaseWorkspacePage(props: {
       {/* Workspace Header */}
       <header className="workspace-topbar">
         <div className="public-nav-container">
-          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+          <div className="flex-row gap-sm">
             <Link
               href="/cases"
-              style={{ color: "var(--muted)", fontSize: "0.85rem", textDecoration: "none", display: "flex", alignItems: "center", gap: "4px" }}
+              style={{ color: "var(--muted)", fontSize: "0.85rem", textDecoration: "none" }}
+              className="flex-row gap-xs"
             >
-              ← My Cases
+              ← {t.nav.myCases}
             </Link>
             <span style={{ color: "var(--line-strong)", fontSize: "0.8rem" }}>|</span>
             <div>
@@ -319,7 +401,7 @@ export default function CaseWorkspacePage(props: {
 
         {error && (
           <div className="error-box" role="alert" style={{ marginBottom: "20px" }}>
-            <strong>Workspace Notice</strong>
+            <strong>{t.common.accessDenied}</strong>
             <span>{error}</span>
           </div>
         )}
@@ -337,7 +419,7 @@ export default function CaseWorkspacePage(props: {
             className={`workspace-tab ${activeTab === "overview" ? "active" : ""}`}
             onClick={() => setActiveTab("overview")}
           >
-            1. Overview
+            1. {t.workspace.tabOverview}
           </button>
           <button
             type="button"
@@ -346,7 +428,7 @@ export default function CaseWorkspacePage(props: {
             className={`workspace-tab ${activeTab === "evidence" ? "active" : ""}`}
             onClick={() => setActiveTab("evidence")}
           >
-            2. Evidence
+            2. {t.workspace.tabEvidence}
             <span className="workspace-tab-badge">{caseDetail.evidence.length}</span>
           </button>
           <button
@@ -356,7 +438,7 @@ export default function CaseWorkspacePage(props: {
             className={`workspace-tab ${activeTab === "timeline" ? "active" : ""}`}
             onClick={() => setActiveTab("timeline")}
           >
-            3. Timeline
+            3. {t.workspace.tabTimeline}
           </button>
           <button
             type="button"
@@ -365,7 +447,7 @@ export default function CaseWorkspacePage(props: {
             className={`workspace-tab ${activeTab === "report" ? "active" : ""}`}
             onClick={() => setActiveTab("report")}
           >
-            4. Report
+            4. {t.workspace.tabReport}
           </button>
           <button
             type="button"
@@ -374,7 +456,7 @@ export default function CaseWorkspacePage(props: {
             className={`workspace-tab ${activeTab === "tracking" ? "active" : ""}`}
             onClick={() => setActiveTab("tracking")}
           >
-            5. Tracking
+            5. {t.tracking.title}
           </button>
         </div>
 
@@ -387,22 +469,22 @@ export default function CaseWorkspacePage(props: {
           <span className="health-bar-divider" aria-hidden="true">/</span>
           <div className="health-bar-item">
             <span className={`health-bar-dot ${caseDetail.evidence.length > 0 ? "complete" : "active"}`} aria-hidden="true" />
-            <span>02 Evidence: <strong>{caseDetail.evidence.length} file{caseDetail.evidence.length !== 1 ? "s" : ""} ({verifiedFacts.length} verified)</strong></span>
+            <span>02 {t.workspace.tabEvidence}: <strong>{caseDetail.evidence.length} ({verifiedFacts.length} {t.evidence.statusVerified})</strong></span>
           </div>
           <span className="health-bar-divider" aria-hidden="true">/</span>
           <div className="health-bar-item">
             <span className={`health-bar-dot ${timelineEvents.length > 1 ? "complete" : "active"}`} aria-hidden="true" />
-            <span>03 Timeline: <strong>{timelineEvents.length} event{timelineEvents.length !== 1 ? "s" : ""}</strong></span>
+            <span>03 {t.workspace.tabTimeline}: <strong>{timelineEvents.length}</strong></span>
           </div>
           <span className="health-bar-divider" aria-hidden="true">/</span>
           <div className="health-bar-item">
             <span className={`health-bar-dot ${caseDetail.status === "submitted" ? "complete" : "active"}`} aria-hidden="true" />
-            <span>04 Report: <strong>{caseDetail.status === "submitted" ? "Submitted" : "Draft ready"}</strong></span>
+            <span>04 {t.workspace.tabReport}: <strong>{caseDetail.status === "submitted" ? t.submitted.eyebrow : t.dossierHud.draft}</strong></span>
           </div>
           <span className="health-bar-divider" aria-hidden="true">/</span>
           <div className="health-bar-item">
             <span className="health-bar-dot complete" aria-hidden="true" />
-            <span>05 Status: <strong>{caseDetail.statusLabel}</strong></span>
+            <span>05 {t.cases.tableStatus}: <strong>{caseDetail.statusLabel}</strong></span>
           </div>
         </div>
 
@@ -410,7 +492,7 @@ export default function CaseWorkspacePage(props: {
         {activeTab === "overview" && (
           <div className="card" style={{ padding: "32px", border: "1px solid var(--line)" }}>
             <h2 style={{ fontSize: "1.25rem", margin: "0 0 16px", color: "var(--ink)" }}>
-              Incident Summary
+              {t.workspace.tabOverview}
             </h2>
             <div style={{ background: "var(--paper-subtle)", padding: "16px 20px", borderRadius: "var(--radius-sm)", marginBottom: "24px" }}>
               <p style={{ margin: 0, fontSize: "0.95rem", lineHeight: 1.6, whiteSpace: "pre-wrap" }}>
@@ -420,20 +502,20 @@ export default function CaseWorkspacePage(props: {
 
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "16px", marginBottom: "28px" }}>
               <div style={{ padding: "16px", border: "1px solid var(--line)", borderRadius: "var(--radius-sm)" }}>
-                <span style={{ fontSize: "0.8rem", color: "var(--muted)", display: "block" }}>INCIDENT TYPE</span>
+                <span style={{ fontSize: "0.8rem", color: "var(--muted)", display: "block" }}>{t.cases.tableType}</span>
                 <strong style={{ fontSize: "0.95rem" }}>{caseDetail.incidentType || "Online fraud"}</strong>
               </div>
               <div style={{ padding: "16px", border: "1px solid var(--line)", borderRadius: "var(--radius-sm)" }}>
-                <span style={{ fontSize: "0.8rem", color: "var(--muted)", display: "block" }}>URGENCY</span>
+                <span style={{ fontSize: "0.8rem", color: "var(--muted)", display: "block" }}>{t.cases.tableUrgency}</span>
                 <strong style={{ fontSize: "0.95rem" }}>{caseDetail.urgency.toUpperCase()}</strong>
               </div>
               <div style={{ padding: "16px", border: "1px solid var(--line)", borderRadius: "var(--radius-sm)" }}>
-                <span style={{ fontSize: "0.8rem", color: "var(--muted)", display: "block" }}>VERIFIED FACTS</span>
-                <strong style={{ fontSize: "0.95rem" }}>{verifiedFacts.length} Confirmed</strong>
+                <span style={{ fontSize: "0.8rem", color: "var(--muted)", display: "block" }}>{t.evidence.statusVerified}</span>
+                <strong style={{ fontSize: "0.95rem" }}>{verifiedFacts.length}</strong>
               </div>
               <div style={{ padding: "16px", border: "1px solid var(--line)", borderRadius: "var(--radius-sm)" }}>
-                <span style={{ fontSize: "0.8rem", color: "var(--muted)", display: "block" }}>ATTACHED EVIDENCE</span>
-                <strong style={{ fontSize: "0.95rem" }}>{caseDetail.evidence.length} Files</strong>
+                <span style={{ fontSize: "0.8rem", color: "var(--muted)", display: "block" }}>{t.workspace.tabEvidence}</span>
+                <strong style={{ fontSize: "0.95rem" }}>{caseDetail.evidence.length}</strong>
               </div>
             </div>
 
@@ -443,7 +525,7 @@ export default function CaseWorkspacePage(props: {
                 className="primary-button"
                 onClick={() => setActiveTab("evidence")}
               >
-                Continue to Evidence Locker →
+                {t.evidence.title} →
               </button>
             </div>
           </div>
@@ -459,7 +541,7 @@ export default function CaseWorkspacePage(props: {
                 if (updated) {
                   setCaseDetail((prev) => prev ? {
                     ...prev,
-                    evidence: [normaliseEvidence(updated)],
+                    evidence: prev.evidence.map((item) => item.id === updated.id ? normaliseEvidence(updated) : item),
                   } : null);
                 }
               }}
@@ -510,14 +592,37 @@ export default function CaseWorkspacePage(props: {
               explanation={explanation}
               onBack={() => setActiveTab("report")}
               onExplain={async () => {
-                setExplanation({
-                  meaning: "Your incident report has been organized and recorded in your CyberDesk workspace.",
-                  next_expected_step: "Review your verified timeline and preserve communications with your bank and local cyber cell.",
-                  limitations: "CyberDesk is an assistance tool and does not replace official police or bank investigations.",
-                  source: "demo_fallback",
-                });
+                setBusy("explain");
+                setError("");
+                try {
+                  const response = await authFetch("/api/ai/explain-status", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      status: caseDetail.status,
+                      status_label: caseDetail.statusLabel,
+                      case_id: caseDetail.acknowledgementId || caseDetail.id.slice(0, 8).toUpperCase(),
+                      verified_context: verifiedFacts.length > 0 ? verifiedFacts : [
+                        `Incident Type: ${caseDetail.incidentType || "Online cyber incident"}`,
+                        `Description: ${caseDetail.description.slice(0, 300)}`
+                      ],
+                    }),
+                  });
+                  const data = await response.json();
+                  if (!response.ok) throw new Error(data.error ?? "Could not explain the status.");
+                  setExplanation(data);
+                } catch (err) {
+                  setExplanation({
+                    meaning: "Your incident report has been organized and recorded in your CyberDesk workspace.",
+                    next_expected_step: "Review your verified timeline and preserve communications with your bank and local cyber cell.",
+                    limitations: "CyberDesk is an assistance tool and does not replace official police or bank investigations.",
+                    source: "demo_fallback",
+                  });
+                } finally {
+                  setBusy(null);
+                }
               }}
-              busy={false}
+              busy={busy === "explain"}
             />
           </div>
         )}

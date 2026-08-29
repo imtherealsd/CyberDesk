@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { LanguageSelector } from "./LanguageSelector";
 import { useAuth } from "@/lib/auth-context";
+import { useI18n } from "@/lib/i18n";
 
 export interface PublicNavProps {
   onStartIncident?: () => void;
@@ -14,6 +15,7 @@ export function PublicNav({ onStartIncident }: PublicNavProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const pathname = usePathname();
   const { user, signOut } = useAuth();
+  const { t } = useI18n();
   const router = useRouter();
   const drawerRef = useRef<HTMLDivElement>(null);
   const toggleRef = useRef<HTMLButtonElement>(null);
@@ -61,15 +63,15 @@ export function PublicNav({ onStartIncident }: PublicNavProps) {
   }, [mobileMenuOpen]);
 
   const navLinks = [
-    { href: "/", label: "Home" },
-    { href: "/how-it-works", label: "How it works" },
-    { href: "/safety", label: "Safety" },
-    { href: "/resources", label: "Resources" },
-    { href: "/about", label: "About" },
+    { href: "/", label: t.nav.home },
+    { href: "/how-it-works", label: t.nav.howItWorks },
+    { href: "/safety", label: t.nav.safety },
+    { href: "/resources", label: t.nav.resources },
+    { href: "/about", label: t.nav.about },
   ];
 
   if (user) {
-    navLinks.push({ href: "/cases", label: "My Cases" });
+    navLinks.push({ href: "/cases", label: t.nav.myCases });
   }
 
   const isOnHome = pathname === "/";
@@ -79,13 +81,12 @@ export function PublicNav({ onStartIncident }: PublicNavProps) {
       <div className="public-nav-container">
         <Link href="/" className="brand" aria-label="CyberDesk Home">
           <span className="brand-mark" aria-hidden="true">
-            <span />
-            <span />
-            <span />
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/cyberdesk-logo.png" alt="" width={32} height={32} className="brand-logo-img" />
           </span>
           <span className="brand-text">
             <strong>CyberDesk</strong>
-            <small>Citizen cyber incident assistance</small>
+            <small>{t.common.brandSubtitle}</small>
           </span>
         </Link>
 
@@ -128,7 +129,7 @@ export function PublicNav({ onStartIncident }: PublicNavProps) {
                 {user.email}
               </span>
               <Link href="/cases" className="primary-button nav-cta-btn">
-                My Cases <span aria-hidden="true">→</span>
+                {t.nav.myCases} <span aria-hidden="true">→</span>
               </Link>
             </div>
           ) : (
@@ -138,7 +139,7 @@ export function PublicNav({ onStartIncident }: PublicNavProps) {
                 className="secondary-button"
                 style={{ fontSize: "0.85rem", padding: "8px 14px" }}
               >
-                Sign in
+                {t.nav.signIn}
               </Link>
               {/* "Start an incident" only shown if we have an onStartIncident handler (home page SPA) */}
               {onStartIncident && !isOnHome && (
@@ -147,12 +148,12 @@ export function PublicNav({ onStartIncident }: PublicNavProps) {
                   className="primary-button nav-cta-btn"
                   onClick={onStartIncident}
                 >
-                  Start an incident <span aria-hidden="true">→</span>
+                  {t.nav.startIncident} <span aria-hidden="true">→</span>
                 </button>
               )}
               {!onStartIncident && (
                 <Link href="/" className="primary-button nav-cta-btn">
-                  Start an incident <span aria-hidden="true">→</span>
+                  {t.nav.startIncident} <span aria-hidden="true">→</span>
                 </Link>
               )}
             </>
@@ -166,7 +167,7 @@ export function PublicNav({ onStartIncident }: PublicNavProps) {
             onClick={() => setMobileMenuOpen((prev) => !prev)}
             aria-expanded={mobileMenuOpen}
             aria-controls="mobile-nav-drawer"
-            aria-label={mobileMenuOpen ? "Close navigation menu" : "Open navigation menu"}
+            aria-label={mobileMenuOpen ? t.shell.closeMenu : t.shell.openMenu}
           >
             <span className={`hamburger-bar ${mobileMenuOpen ? "open" : ""}`} />
             <span className={`hamburger-bar ${mobileMenuOpen ? "open" : ""}`} />
@@ -182,7 +183,7 @@ export function PublicNav({ onStartIncident }: PublicNavProps) {
         className="mobile-nav-drawer"
         role="dialog"
         aria-modal="true"
-        aria-label="Mobile navigation menu"
+        aria-label={t.shell.menu}
         aria-hidden={!mobileMenuOpen}
         style={{ display: mobileMenuOpen ? undefined : "none" }}
       >
@@ -193,21 +194,24 @@ export function PublicNav({ onStartIncident }: PublicNavProps) {
             </span>
           ) : (
             <span style={{ fontSize: "0.8rem", color: "var(--muted)", fontWeight: 600 }}>
-              CyberDesk Menu
+              CyberDesk {t.shell.menu}
             </span>
           )}
-          <button
-            type="button"
-            className="secondary-button"
-            style={{ padding: "6px 12px", fontSize: "0.85rem" }}
-            onClick={() => {
-              setMobileMenuOpen(false);
-              toggleRef.current?.focus();
-            }}
-            aria-label="Close menu"
-          >
-            ✕ Close
-          </button>
+          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            <LanguageSelector />
+            <button
+              type="button"
+              className="secondary-button"
+              style={{ padding: "6px 12px", fontSize: "0.85rem" }}
+              onClick={() => {
+                setMobileMenuOpen(false);
+                toggleRef.current?.focus();
+              }}
+              aria-label={t.common.close}
+            >
+              ✕ {t.common.close}
+            </button>
+          </div>
         </div>
         <nav className="mobile-nav-links" aria-label="Mobile navigation">
           {navLinks.map((link) => {
@@ -228,7 +232,7 @@ export function PublicNav({ onStartIncident }: PublicNavProps) {
           {user ? (
             <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
               <Link href="/cases" className="primary-button mobile-cta-btn">
-                My Cases <span aria-hidden="true">→</span>
+                {t.nav.myCases} <span aria-hidden="true">→</span>
               </Link>
               <button
                 type="button"
@@ -238,16 +242,16 @@ export function PublicNav({ onStartIncident }: PublicNavProps) {
                   signOut().then(() => router.push("/"));
                 }}
               >
-                Sign out
+                {t.nav.signOut}
               </button>
             </div>
           ) : (
             <>
               <Link href="/login" className="secondary-button mobile-cta-btn" style={{ marginBottom: "8px" }}>
-                Sign in
+                {t.nav.signIn}
               </Link>
               <Link href="/" className="primary-button mobile-cta-btn">
-                Start an incident <span aria-hidden="true">→</span>
+                {t.nav.startIncident} <span aria-hidden="true">→</span>
               </Link>
             </>
           )}
@@ -256,3 +260,4 @@ export function PublicNav({ onStartIncident }: PublicNavProps) {
     </header>
   );
 }
+
