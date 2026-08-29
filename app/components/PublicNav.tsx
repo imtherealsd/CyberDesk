@@ -65,6 +65,7 @@ export function PublicNav({ onStartIncident }: PublicNavProps) {
   const navLinks = [
     { href: "/", label: t.nav.home },
     { href: "/how-it-works", label: t.nav.howItWorks },
+    { href: "/developer", label: "Developer PaaS" },
     { href: "/safety", label: t.nav.safety },
     { href: "/resources", label: t.nav.resources },
     { href: "/about", label: t.nav.about },

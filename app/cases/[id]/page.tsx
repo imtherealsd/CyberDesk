@@ -14,6 +14,7 @@ import { TrackingScreen } from "@/app/components/TrackingScreen";
 import { getNormalisedMimeType, normaliseEvidence } from "@/lib/evidence";
 import { getExtractionContent } from "@/lib/evidence-content";
 import { getSupabaseBrowserClient } from "@/lib/supabase";
+import { matchLegalProvisions, generateFIRDraft, generateBankFreezeNotice } from "@/lib/legal-engine";
 import type {
   CaseDetail,
   DemoCase,
@@ -25,7 +26,7 @@ import type {
   TimelineEvent,
 } from "@/lib/types";
 
-type WorkspaceTab = "overview" | "evidence" | "timeline" | "report" | "tracking";
+type WorkspaceTab = "overview" | "evidence" | "timeline" | "report" | "tracking" | "legal";
 
 export default function CaseWorkspacePage(props: {
   params: Promise<{ id: string }>;
@@ -486,6 +487,16 @@ export default function CaseWorkspacePage(props: {
           >
             5. {t.tracking.title}
           </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeTab === "legal"}
+            className={`workspace-tab ${activeTab === "legal" ? "active" : ""}`}
+            onClick={() => setActiveTab("legal")}
+            style={{ borderColor: activeTab === "legal" ? "var(--teal)" : undefined, color: activeTab === "legal" ? "var(--teal)" : undefined }}
+          >
+            6. Legal & FIR Studio ⚖️
+          </button>
         </div>
 
         {/* Dynamic Workspace Health / Progress Summary */}
@@ -652,6 +663,116 @@ export default function CaseWorkspacePage(props: {
               }}
               busy={busy === "explain"}
             />
+          </div>
+        )}
+
+        {/* Tab 6: Legal & FIR Studio */}
+        {activeTab === "legal" && (
+          <div style={{ display: "grid", gap: "24px" }}>
+            {/* Matched Legal Sections Card */}
+            <div className="card" style={{ padding: "28px", border: "1px solid var(--line)" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+                <div>
+                  <span className="badge" style={{ background: "rgba(16, 185, 129, 0.15)", color: "#10b981", padding: "4px 10px", borderRadius: "999px", fontSize: "0.8rem", fontWeight: "700" }}>
+                    Automated Indian Law Classification
+                  </span>
+                  <h3 style={{ fontSize: "1.3rem", fontWeight: "700", marginTop: "8px", margin: "8px 0 4px" }}>
+                    Applicable Bharatiya Nyaya Sanhita (BNS) & IT Act Provisions
+                  </h3>
+                  <p style={{ fontSize: "0.9rem", color: "var(--muted)", margin: 0 }}>
+                    Automatically mapped based on your verified incident facts, monetary loss, and modus operandi.
+                  </p>
+                </div>
+              </div>
+
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "16px", marginTop: "16px" }}>
+                {matchLegalProvisions(
+                  caseDetail.incidentType || "",
+                  caseDetail.description,
+                  verifiedFacts.map((v) => ({ label: "Fact", value: v }))
+                ).map((prov, i) => (
+                  <div key={i} style={{ padding: "16px", background: "var(--paper-subtle)", borderRadius: "var(--radius-sm)", border: "1px solid var(--line)" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+                      <strong style={{ color: "var(--teal)", fontSize: "1.05rem" }}>{prov.code}</strong>
+                      <span style={{ fontSize: "0.75rem", background: prov.cognizable ? "rgba(239, 68, 68, 0.15)" : "rgba(59, 130, 246, 0.15)", color: prov.cognizable ? "#ef4444" : "#3b82f6", padding: "2px 8px", borderRadius: "4px", fontWeight: "700" }}>
+                        {prov.cognizable ? "Cognizable (Police Arrest)" : "Non-Cognizable"}
+                      </span>
+                    </div>
+                    <p style={{ fontSize: "0.85rem", fontWeight: "700", margin: "0 0 4px", color: "var(--ink)" }}>{prov.title}</p>
+                    <p style={{ fontSize: "0.8rem", color: "var(--muted)", margin: "0 0 8px", lineHeight: 1.4 }}>{prov.act}</p>
+                    <p style={{ fontSize: "0.8rem", margin: "0 0 8px", lineHeight: 1.4 }}>{prov.applicabilityReason}</p>
+                    <div style={{ borderTop: "1px solid var(--line)", paddingTop: "8px", fontSize: "0.75rem", color: "var(--muted)" }}>
+                      ⚖️ Penalty: <strong>{prov.maxPenalty}</strong>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Generated FIR & Bank Notice Actions */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
+              {/* FIR Complaint Generator */}
+              <div className="card" style={{ padding: "24px", border: "1px solid var(--line)" }}>
+                <h3 style={{ fontSize: "1.15rem", fontWeight: "700", margin: "0 0 8px" }}>
+                  📋 Police Cyber Cell FIR Complaint Draft
+                </h3>
+                <p style={{ fontSize: "0.85rem", color: "var(--muted)", marginBottom: "16px", lineHeight: 1.5 }}>
+                  Court-formatted formal complaint letter addressed to the Station House Officer (SHO) with Annexures A, B & C.
+                </p>
+                <button
+                  type="button"
+                  className="primary-button"
+                  style={{ width: "100%", padding: "10px", fontSize: "0.9rem" }}
+                  onClick={() => {
+                    const fir = generateFIRDraft({
+                      complainantName: (user?.email ? user.email.split("@")[0] : "Citizen Complainant"),
+                      complainantContact: user?.email || "Provided in complaint",
+                      incidentType: caseDetail.incidentType || "Cyber Crime",
+                      description: caseDetail.description,
+                      verifiedFacts: verifiedFacts.map((v) => ({ label: "Detail", value: v })),
+                      evidenceFilenames: caseDetail.evidence.map((e) => e.filename),
+                    });
+                    const firText = `TO:\n${fir.toAuthority}\n\nSUBJECT:\n${fir.subject}\n\nCOMPLAINANT:\nName: ${fir.complainantName}\nContact: ${fir.complainantContact}\nDate: ${fir.incidentDateTime}\n\nNARRATIVE OF INCIDENT:\n${fir.narrativeBody}\n\nAPPLICABLE PROVISIONS OF LAW:\n${fir.applicableProvisions.map((p) => `• ${p.code} ${p.act} (${p.title})`).join("\n")}\n\nEVIDENTIAL ANNEXURES:\n${fir.evidentialAnnexures.join("\n")}\n\nPRAYER:\n${fir.prayer}\n\nVERIFICATION:\n${fir.verificationStatement}`;
+                    navigator.clipboard.writeText(firText);
+                    setNotice("✓ Formal FIR Complaint draft copied to clipboard!");
+                  }}
+                >
+                  Copy Court-Ready FIR Draft 📋
+                </button>
+              </div>
+
+              {/* Bank Freeze Notice */}
+              <div className="card" style={{ padding: "24px", border: "1px solid var(--line)" }}>
+                <h3 style={{ fontSize: "1.15rem", fontWeight: "700", margin: "0 0 8px" }}>
+                  🏦 Bank Account Freeze Notice (Sec 94 BNSS)
+                </h3>
+                <p style={{ fontSize: "0.85rem", color: "var(--muted)", marginBottom: "16px", lineHeight: 1.5 }}>
+                  Formal legal demand letter for Bank Nodal Officers requesting immediate debit freeze under RBI Cyber Fraud Guidelines.
+                </p>
+                <button
+                  type="button"
+                  className="secondary-button"
+                  style={{ width: "100%", padding: "10px", fontSize: "0.9rem" }}
+                  onClick={() => {
+                    const noticeObj = generateBankFreezeNotice({
+                      bankName: "Beneficiary Bank Nodal Officer",
+                      complainantName: (user?.email ? user.email.split("@")[0] : "Aggrieved Citizen"),
+                      transactions: [{
+                        amount: "Disclosed in verified facts",
+                        utrOrRef: "Disputed transaction ID",
+                        beneficiaryAccountOrUpi: "Recipient mule account",
+                        dateTime: new Date().toISOString(),
+                      }],
+                    });
+                    const noticeText = `TO:\n${noticeObj.toBankNodalOfficer}\n\nREFERENCE:\n${noticeObj.noticeReference}\n\nSUBJECT:\n${noticeObj.subject}\n\nLEGAL BASIS:\n${noticeObj.legalBasis}\n\nIMMEDIATE DEMANDS:\n${noticeObj.immediateDemands.map((d, i) => `${i + 1}. ${d}`).join("\n")}\n\nDECLARATION:\n${noticeObj.declaration}`;
+                    navigator.clipboard.writeText(noticeText);
+                    setNotice("✓ Bank Freeze & Lien Notice copied to clipboard!");
+                  }}
+                >
+                  Copy Bank Nodal Notice 🏦
+                </button>
+              </div>
+            </div>
           </div>
         )}
       </main>
