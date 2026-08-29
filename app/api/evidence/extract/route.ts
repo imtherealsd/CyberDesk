@@ -21,23 +21,23 @@ export async function POST(request: Request) {
 
     let extraction;
     let fallbackReason = "";
-    if (!process.env.OPENAI_API_KEY) {
+    if (!process.env.GEMINI_API_KEY && !process.env.OPENAI_API_KEY) {
       extraction = demoEvidenceExtraction({ evidence, content: body.content });
-      fallbackReason = "OpenAI is not configured, so CyberDesk used the limited demo extractor.";
+      fallbackReason = "Gemini AI is not configured, so CyberDesk used the limited demo extractor.";
     } else {
       try {
         extraction = await extractEvidence({ evidence, content: body.content });
       } catch (error) {
         console.error("evidence extraction failed; using fallback", error);
         extraction = demoEvidenceExtraction({ evidence, content: body.content });
-        fallbackReason = "OpenAI was unavailable, so CyberDesk used the limited demo extractor.";
+        fallbackReason = "Gemini AI was unavailable, so CyberDesk used the limited demo extractor.";
       }
     }
 
     const processedEvidence: EvidenceItem = {
       ...evidence,
       candidateFields: extraction.candidateFields,
-      extractionStatus: extraction.source === "openai" ? "complete" : "fallback",
+      extractionStatus: (extraction.source === "gemini" || extraction.source === "openai") ? "complete" : "fallback",
       extractionNotes: extraction.extractionNotes,
     };
     const persistence = await persistEvidenceMetadata({ evidence: processedEvidence });

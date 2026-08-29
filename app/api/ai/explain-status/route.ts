@@ -53,13 +53,15 @@ export async function POST(request: Request) {
 
   try {
     const safeContext = sanitiseStatusContext(context);
-    if (!process.env.OPENAI_API_KEY) return Response.json(demoStatusExplanation(safeContext));
+    if (!process.env.GEMINI_API_KEY && !process.env.OPENAI_API_KEY) {
+      return Response.json(demoStatusExplanation(safeContext));
+    }
     return Response.json(await explainStatus(safeContext));
   } catch (error) {
     console.error("status explanation failed", error);
     return Response.json({
       ...demoStatusExplanation(context),
-      fallback_reason: "OpenAI was unavailable, so this explanation was generated deterministically from the same synthetic case facts.",
+      fallback_reason: "Gemini AI was unavailable, so this explanation was generated deterministically from the same synthetic case facts.",
     });
   }
 }

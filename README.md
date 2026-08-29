@@ -7,7 +7,7 @@
 [![Playwright](https://img.shields.io/badge/Playwright-86_Run-success.svg)](https://playwright.dev/)
 [![Next.js](https://img.shields.io/badge/Next.js-15.5_App_Router-black.svg)](https://nextjs.org/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Supabase_RLS-336791.svg)](https://supabase.com/)
-[![OpenAI](https://img.shields.io/badge/OpenAI-Structured_JSON_APIs-412991.svg)](https://platform.openai.com/)
+[![Gemini](https://img.shields.io/badge/Gemini_API-Structured_JSON_Schemas-4285F4.svg)](https://ai.google.dev/)
 
 ---
 
@@ -37,8 +37,8 @@ Raw Citizen Input → AI Candidate Suggestion → Citizen Review (Accept/Edit/Re
 - **AI output is never automatically a verified fact.**
 - All AI suggestions are marked as `candidate` until explicitly confirmed by the citizen.
 - Sensitive credentials (OTPs, banking PINs, card CVVs, Aadhaar, PAN and account-like numeric values) are filtered before candidate presentation; valid Indian phone numbers remain usable.
-- All OpenAI API calls utilize `store: false` to ensure zero retention of citizen evidence on third-party servers.
-- Full provenance metadata (`origin: openai | demo_fallback | citizen | synthetic`, timestamp) is attached to every verified fact.
+- All Gemini API calls enforce structured JSON output schemas with zero retention of citizen evidence.
+- Full provenance metadata (`origin: gemini | openai | demo_fallback | citizen | synthetic`, timestamp) is attached to every verified fact.
 
 ---
 
@@ -69,7 +69,7 @@ CyberDesk is transparent and honest about its boundaries:
 - **Framework**: Next.js 15.5.24 (App Router, React 19, Server Components)
 - **Language**: TypeScript 5.8.3 (Strict Mode)
 - **Database & Storage**: Supabase (PostgreSQL with Row-Level Security & Private Buckets)
-- **AI Integration**: OpenAI Responses API (`gpt-4.1-mini` with strict JSON Schema enforcement)
+- **AI Integration**: Google Gemini API (`@google/genai` / `gemini-2.5-flash` with strict JSON Schema enforcement)
 - **Validation**: Zod (Strict schema parsing on all API endpoints)
 - **Testing**: Playwright (86 desktop/mobile test runs covering authorization, journeys, and localization; 2 production-only checks are skipped without a separate production URL)
 - **Styling**: Vanilla CSS (Zero heavy UI libraries, custom Civic Editorial design system)
@@ -109,13 +109,13 @@ Visit `http://localhost:3000` to access the application.
 | `NEXT_PUBLIC_SUPABASE_URL` | Supabase Project URL | Required for cloud authentication; omit only for the isolated local/test store |
 | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Supabase Public Anon Key | Required with the project URL for cloud authentication |
 | `SUPABASE_SERVICE_ROLE_KEY` | Supabase Service Role Key (Server-only) | Required for authenticated cloud-case writes and private storage |
-| `OPENAI_API_KEY` | OpenAI API Key (Server-only) | Optional (Deterministic fallback active) |
-| `OPENAI_MODEL` | OpenAI Model (Default: `gpt-4.1-mini`) | Optional |
+| `GEMINI_API_KEY` | Google Gemini API Key (Server-only) | Optional (Deterministic fallback active) |
+| `GEMINI_MODEL` | Gemini Model (Default: `gemini-2.5-flash`) | Optional |
 | `CYBERDESK_TEST_AUTH` | Local Test User Authentication (`1` or `0`) | Dev/Test only |
 | `NEXT_PUBLIC_CYBERDESK_TEST_AUTH` | Local browser test-session UI (`1` or `0`) | Dev/Test only |
 | `CYBERDESK_FORCE_LOCAL_STORE` | Force the isolated in-memory case store (`1` or `0`) | Dev/Test only |
 
-> **Note**: If `OPENAI_API_KEY` is not provided, CyberDesk uses its deterministic extraction fallback. The public synthetic demo works offline. The authenticated cloud workspace additionally requires Supabase Auth configuration and the server-only `SUPABASE_SERVICE_ROLE_KEY`; the Playwright harness supplies the three local test flags explicitly.
+> **Note**: If `GEMINI_API_KEY` is not provided, CyberDesk uses its deterministic extraction fallback. The public synthetic demo works offline. The authenticated cloud workspace additionally requires Supabase Auth configuration and the server-only `SUPABASE_SERVICE_ROLE_KEY`; the Playwright harness supplies the three local test flags explicitly.
 
 ---
 

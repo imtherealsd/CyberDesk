@@ -23,7 +23,7 @@ const evidenceCategorySchema = z.enum([
 ]);
 
 const provenanceSchema = z.object({
-  origin: z.enum(["openai", "demo_fallback", "citizen", "synthetic"]),
+  origin: z.enum(["gemini", "openai", "demo_fallback", "citizen", "synthetic"]),
   evidenceId: z.string().max(160),
   sourceReference: z.string().max(200).optional(),
   verifiedAt: z.string().max(80).optional(),

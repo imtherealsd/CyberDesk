@@ -44,6 +44,7 @@ export function SourceBadge({ source, className = "", showIcon = true }: SourceB
   } else if (
     source === "ai" ||
     lower.includes("ai") ||
+    lower.includes("gemini") ||
     lower.includes("openai") ||
     lower.includes("suggested")
   ) {

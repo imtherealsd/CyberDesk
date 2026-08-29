@@ -99,7 +99,7 @@ export type ExtractionStatus =
 export type FieldVerificationStatus = "candidate" | "confirmed" | "rejected";
 
 export type EvidenceProvenance = {
-  origin: "openai" | "demo_fallback" | "citizen" | "synthetic";
+  origin: "gemini" | "openai" | "demo_fallback" | "citizen" | "synthetic";
   evidenceId: string;
   sourceReference?: string;
   verifiedAt?: string;
@@ -150,7 +150,7 @@ export type EvidenceExtraction = {
   sourceReference: string;
   uncertainties: string[];
   extractionNotes: string;
-  source: "openai" | "demo_fallback";
+  source: "gemini" | "openai" | "demo_fallback";
 };
 
 export type TimelineEvent = {
@@ -169,7 +169,7 @@ export type StatusExplanation = {
   meaning: string;
   next_expected_step: string;
   limitations: string;
-  source: "openai" | "demo_fallback";
+  source: "gemini" | "openai" | "demo_fallback";
   fallback_reason?: string;
 };
 

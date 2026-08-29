@@ -50,23 +50,23 @@ export async function POST(
 
     let extraction;
     let fallbackReason = "";
-    if (!process.env.OPENAI_API_KEY) {
+    if (!process.env.GEMINI_API_KEY && !process.env.OPENAI_API_KEY) {
       extraction = demoEvidenceExtraction({ evidence, content: body.content });
-      fallbackReason = "OpenAI is not configured; using deterministic extractor.";
+      fallbackReason = "Gemini AI is not configured; using deterministic extractor.";
     } else {
       try {
         extraction = await extractEvidence({ evidence, content: body.content });
       } catch (error) {
         console.error("AI extraction error; falling back:", error);
         extraction = demoEvidenceExtraction({ evidence, content: body.content });
-        fallbackReason = "OpenAI was unavailable; using deterministic extractor.";
+        fallbackReason = "Gemini AI was unavailable; using deterministic extractor.";
       }
     }
 
     const processedEvidence: EvidenceItem = {
       ...authoritativeEvidence,
       candidateFields: extraction.candidateFields,
-      extractionStatus: extraction.source === "openai" ? "complete" : "fallback",
+      extractionStatus: (extraction.source === "gemini" || extraction.source === "openai") ? "complete" : "fallback",
       extractionNotes: extraction.extractionNotes,
       verificationStatus: "candidate",
       isDemo: false,
