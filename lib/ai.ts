@@ -6,7 +6,7 @@ import { interpretationSchema } from "./api-contracts";
 
 const apiKey = process.env.GEMINI_API_KEY || process.env.OPENAI_API_KEY || "";
 const gemini = apiKey ? new GoogleGenAI({ apiKey }) : null;
-const model = process.env.GEMINI_MODEL || "gemini-2.5-flash";
+const model = process.env.GEMINI_MODEL || "gemini-3.6-flash";
 
 function requireClient() {
   if (!gemini) throw new Error("GEMINI_NOT_CONFIGURED");

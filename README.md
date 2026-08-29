@@ -69,7 +69,7 @@ CyberDesk is transparent and honest about its boundaries:
 - **Framework**: Next.js 15.5.24 (App Router, React 19, Server Components)
 - **Language**: TypeScript 5.8.3 (Strict Mode)
 - **Database & Storage**: Supabase (PostgreSQL with Row-Level Security & Private Buckets)
-- **AI Integration**: Google Gemini API (`@google/genai` / `gemini-2.5-flash` with strict JSON Schema enforcement)
+- **AI Integration**: Google Gemini API (`@google/genai` / `gemini-3.6-flash` with strict JSON Schema enforcement)
 - **Validation**: Zod (Strict schema parsing on all API endpoints)
 - **Testing**: Playwright (86 desktop/mobile test runs covering authorization, journeys, and localization; 2 production-only checks are skipped without a separate production URL)
 - **Styling**: Vanilla CSS (Zero heavy UI libraries, custom Civic Editorial design system)
@@ -110,7 +110,7 @@ Visit `http://localhost:3000` to access the application.
 | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Supabase Public Anon Key | Required with the project URL for cloud authentication |
 | `SUPABASE_SERVICE_ROLE_KEY` | Supabase Service Role Key (Server-only) | Required for authenticated cloud-case writes and private storage |
 | `GEMINI_API_KEY` | Google Gemini API Key (Server-only) | Optional (Deterministic fallback active) |
-| `GEMINI_MODEL` | Gemini Model (Default: `gemini-2.5-flash`) | Optional |
+| `GEMINI_MODEL` | Gemini Model (Default: `gemini-3.6-flash`) | Optional |
 | `CYBERDESK_TEST_AUTH` | Local Test User Authentication (`1` or `0`) | Dev/Test only |
 | `NEXT_PUBLIC_CYBERDESK_TEST_AUTH` | Local browser test-session UI (`1` or `0`) | Dev/Test only |
 | `CYBERDESK_FORCE_LOCAL_STORE` | Force the isolated in-memory case store (`1` or `0`) | Dev/Test only |
